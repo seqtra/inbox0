@@ -1,0 +1,209 @@
+##
+# Docker Compose Configuration for Email-WhatsApp Bridge
+#
+# This file orchestrates all services needed for local development:
+# 1. PostgreSQL - Database for storing emails, users, and messages
+# 2. LocalStack - Local AWS cloud stack for testing S3, SQS, etc.
+# 3. Backend API - Fastify server handling Gmail and Twilio integrations
+# 4. Frontend - Next.js web application
+#
+# Usage:
+#   Start all services: docker-compose up
+#   Start in background: docker-compose up -d
+#   Stop all services: docker-compose down
+#   View logs: docker-compose logs -f [service-name]
+##
+
+version: '3.9'
+
+services:
+  ##
+  # PostgreSQL Database
+  #
+  # Stores all application data including:
+  # - User accounts and preferences
+  # - Email metadata and content
+  # - WhatsApp message history
+  # - Sync logs and analytics
+  ##
+  postgres:
+    image: postgres:16-alpine
+    container_name: email-whatsapp-postgres
+    restart: unless-stopped
+    environment:
+      # Database credentials (change these in production!)
+      POSTGRES_DB: email_whatsapp_bridge
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      # Performance tuning for development
+      POSTGRES_INITDB_ARGS: '-E UTF8 --locale=en_US.UTF-8'
+    ports:
+      # Expose PostgreSQL on localhost:5432
+      - '5432:5432'
+    volumes:
+      # Persist database data across container restarts
+      - postgres_data:/var/lib/postgresql/data
+      # Optional: Add init scripts for schema setup
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      # Health check to ensure database is ready
+      test: ['CMD-SHELL', 'pg_isready -U devuser -d email_whatsapp_bridge']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ##
+  # LocalStack - Local AWS Cloud
+  #
+  # Provides local versions of AWS services:
+  # - S3: Store email attachments
+  # - SQS: Queue for async email processing
+  # - SES: Test email sending (optional)
+  # - Secrets Manager: Store API keys securely
+  ##
+  localstack:
+    image: localstack/localstack:latest
+    container_name: email-whatsapp-localstack
+    restart: unless-stopped
+    ports:
+      # Main LocalStack gateway
+      - '4566:4566'
+      # Edge port (deprecated but some tools still use it)
+      - '4571:4571'
+    environment:
+      # AWS services to enable
+      SERVICES: s3,sqs,secretsmanager,ses
+      # Debugging and development settings
+      DEBUG: 1
+      DATA_DIR: /tmp/localstack/data
+      # Persistence across restarts
+      PERSISTENCE: 1
+      # Docker host for Lambda functions (if needed)
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      # Persist LocalStack data
+      - localstack_data:/tmp/localstack
+      # Allow LocalStack to spawn containers (for Lambda)
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Init scripts for setting up S3 buckets, etc.
+      - ./scripts/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'curl',
+          '-f',
+          'http://localhost:4566/_localstack/health',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ##
+  # Backend API - Fastify Server
+  #
+  # Node.js server that:
+  # - Connects to Gmail API to fetch emails
+  # - Sends WhatsApp messages via Twilio
+  # - Processes and stores email data in PostgreSQL
+  # - Provides REST API for frontend
+  ##
+  api:
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    container_name: email-whatsapp-api
+    restart: unless-stopped
+    ports:
+      # Expose API on localhost:3000
+      - '3000:3000'
+    environment:
+      # Node environment
+      NODE_ENV: development
+
+      # Database connection
+      DATABASE_URL: postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge
+
+      # Gmail API credentials (get these from Google Cloud Console)
+      GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
+      GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET}
+      GMAIL_REDIRECT_URI: http://localhost:3000/auth/google/callback
+
+      # Twilio WhatsApp credentials (get these from Twilio Console)
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
+
+      # AWS / LocalStack configuration
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_ENDPOINT_URL: http://localstack:4566
+      USE_LOCALSTACK: 'true'
+
+      # Application settings
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      API_PORT: 3000
+    volumes:
+      # Mount source code for hot reloading in development
+      - ./api/src:/app/api/src
+      - ./libs/shared/src:/app/libs/shared/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    command: npm run dev
+
+  ##
+  # Frontend - Next.js Application
+  #
+  # React-based web interface that:
+  # - Displays emails fetched from backend
+  # - Allows users to configure preferences
+  # - Shows WhatsApp message history
+  # - Provides OAuth flow for Gmail authentication
+  ##
+  frontend:
+    build:
+      context: .
+      dockerfile: ./apps/frontend/Dockerfile
+    container_name: email-whatsapp-frontend
+    restart: unless-stopped
+    ports:
+      # Expose Next.js on localhost:4200
+      - '4200:4200'
+    environment:
+      # Next.js configuration
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_TELEMETRY_DISABLED: 1
+    volumes:
+      # Mount source code for hot reloading
+      - ./apps/frontend/src:/app/apps/frontend/src
+      - ./libs/shared/src:/app/libs/shared/src
+    depends_on:
+      - api
+    command: npm run dev
+
+##
+# Named volumes for data persistence
+#
+# These volumes ensure data persists even when containers are stopped or removed.
+# To completely reset: docker-compose down -v
+##
+volumes:
+  postgres_data:
+    driver: local
+  localstack_data:
+    driver: local
+
+##
+# Network configuration
+#
+# All services are on the same network and can communicate using service names
+# (e.g., api can connect to postgres:5432)
+##
+networks:
+  default:
+    name: email-whatsapp-network

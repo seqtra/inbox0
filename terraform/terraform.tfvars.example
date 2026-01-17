@@ -1,0 +1,44 @@
+##
+# Terraform Variables Configuration Example
+#
+# Copy this file to terraform.tfvars and fill in your values:
+#   cp terraform.tfvars.example terraform.tfvars
+#
+# IMPORTANT: Never commit terraform.tfvars to version control!
+##
+
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "development" # or "staging" or "production"
+
+# Project Configuration
+project_name = "email-whatsapp-bridge"
+
+# VPC Configuration
+vpc_cidr             = "10.0.0.0/16"
+availability_zones   = ["us-east-1a", "us-east-1b"]
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.11.0/24"]
+
+# Database Configuration
+database_name     = "email_whatsapp_bridge"
+database_username = "dbadmin"
+# IMPORTANT: Set this via environment variable instead:
+# export TF_VAR_database_password="your-secure-password"
+# database_password = "CHANGE_ME_IN_PRODUCTION"
+
+rds_instance_class    = "db.t3.micro"
+rds_allocated_storage = 20
+
+# API Service Configuration
+# Replace with your actual ECR image URLs after building and pushing
+api_container_image = "123456789.dkr.ecr.us-east-1.amazonaws.com/email-whatsapp-api:latest"
+api_desired_count   = 2
+api_cpu             = 512
+api_memory          = 1024
+
+# Frontend Service Configuration
+frontend_container_image = "123456789.dkr.ecr.us-east-1.amazonaws.com/email-whatsapp-frontend:latest"
+frontend_desired_count   = 2
+frontend_cpu             = 256
+frontend_memory          = 512

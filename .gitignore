@@ -46,3 +46,14 @@ Thumbs.db
 out
 
 test-output
+
+# Environment variables (contains secrets!)
+.env
+.env.local
+.env.*.local
+
+# Terraform state files (may contain sensitive data)
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform/
+terraform/.terraform.lock.hcl
