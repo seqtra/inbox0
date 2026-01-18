@@ -2,7 +2,9 @@
   "name": "@email-whatsapp-bridge/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+      "start:frontend": "next start apps/frontend"
+    },
   "private": true,
   "dependencies": {
     "@fastify/autoload": "~6.0.3",

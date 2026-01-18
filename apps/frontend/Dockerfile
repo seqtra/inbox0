@@ -23,8 +23,7 @@ COPY apps/frontend/package*.json ./apps/frontend/
 COPY libs/shared/package*.json ./libs/shared/
 
 # Install dependencies
-RUN npm ci
-
+RUN npm install
 ##
 # Build Stage
 ##
@@ -41,8 +40,7 @@ COPY . .
 
 # Build the frontend application
 # NX will build both the shared library and the frontend
-RUN npm run build frontend
-
+RUN npx nx build frontend
 ##
 # Production Stage
 ##

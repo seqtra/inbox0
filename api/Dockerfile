@@ -23,8 +23,7 @@ COPY api/package*.json ./api/
 COPY libs/shared/package*.json ./libs/shared/
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci
-
+RUN npm install
 ##
 # Build Stage
 ##
@@ -41,8 +40,7 @@ COPY . .
 
 # Build the API using NX
 # This will compile TypeScript and bundle the application
-RUN npm run build api
-
+RUN npx nx build api
 ##
 # Production Stage
 ##
