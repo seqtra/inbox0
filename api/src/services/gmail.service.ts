@@ -17,9 +17,7 @@ import { buildGmailQuery } from '@email-whatsapp-bridge/shared';
 // OAuth2 credentials from environment variables
 const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID || '';
 const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET || '';
-const GMAIL_REDIRECT_URI = process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/auth/google/callback';
-
-/**
+const GMAIL_REDIRECT_URI = process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback';/**
  * Gmail Service Class
  *
  * Provides methods for interacting with Gmail API.

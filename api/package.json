@@ -16,7 +16,7 @@
           "format": [
             "cjs"
           ],
-          "bundle": false,
+          "bundle": true,
           "main": "api/src/main.ts",
           "tsConfig": "api/tsconfig.app.json",
           "assets": [
@@ -105,9 +105,10 @@
     }
   },
   "dependencies": {
+    "@fastify/autoload": "~6.0.3",
+    "@fastify/sensible": "~6.0.2",
     "fastify": "~5.2.1",
     "fastify-plugin": "~5.0.1",
-    "@fastify/autoload": "~6.0.3",
-    "@fastify/sensible": "~6.0.2"
+    "googleapis": "^170.1.0"
   }
 }

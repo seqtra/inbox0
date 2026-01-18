@@ -51,7 +51,8 @@ export const api = createApi({
     getEmails: builder.query<ApiResponse<Email[]>, EmailFilters | void>({
       query: (filters) => ({
         url: '/emails',
-        params: filters,
+        // If filters is void/undefined, explicitly pass undefined
+        params: filters || undefined,
       }),
       providesTags: ['Email'],
     }),
