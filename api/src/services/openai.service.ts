@@ -64,7 +64,7 @@ export class OpenAIService {
         (Content truncated to first 3000 chars for efficiency)
       `.trim();
 
-      const completion = await this.client.beta.chat.completions.parse({
+      const completion = await this.client.chat.completions.parse({
         model: "gpt-4o-2024-08-06", // Use a model that supports Structured Outputs
         messages: [
           { 
