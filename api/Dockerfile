@@ -11,7 +11,7 @@
 ##
 
 FROM node:20-alpine AS deps
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl libc6-compat
 # Install dependencies needed for native modules
 RUN apk add --no-cache libc6-compat python3 make g++
 
@@ -47,8 +47,7 @@ RUN npx nx build api
 FROM node:20-alpine AS runner
 
 # Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
-
+RUN apk add --no-cache dumb-init openssl libc6-compat
 WORKDIR /app
 
 ENV NODE_ENV production

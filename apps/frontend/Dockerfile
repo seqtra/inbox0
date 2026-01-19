@@ -11,7 +11,7 @@
 ##
 
 FROM node:20-alpine AS deps
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl libc6-compat
 # Install dependencies only when needed
 RUN apk add --no-cache libc6-compat
 
@@ -50,8 +50,9 @@ WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
-
+RUN apk add --no-cache openssl libc6-compat
 # Create a non-root user for security
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 

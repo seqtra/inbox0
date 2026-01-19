@@ -8,8 +8,9 @@ datasource db {
 generator client {
   provider      = "prisma-client-js"
   // "native" is for your local machine (Mac M1/M2)
-  // "linux-musl-openssl-3.0.x" is for the Alpine Docker container
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  // "linux-musl-openssl-3.0.x" is for Intel/AMD64 Alpine
+  // "linux-musl-arm64-openssl-3.0.x" is for ARM64 Alpine (Your setup)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 // === User & Auth ===
