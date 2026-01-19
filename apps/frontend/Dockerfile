@@ -11,7 +11,7 @@
 ##
 
 FROM node:20-alpine AS deps
-
+RUN apk add --no-cache openssl
 # Install dependencies only when needed
 RUN apk add --no-cache libc6-compat
 
@@ -37,7 +37,7 @@ COPY --from=deps /app/package*.json ./
 
 # Copy source code
 COPY . .
-
+RUN npx prisma generate --schema=./libs/shared/prisma/schema.prisma
 # Build the frontend application
 # NX will build both the shared library and the frontend
 RUN npx nx build frontend

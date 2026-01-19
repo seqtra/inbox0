@@ -11,7 +11,7 @@
 ##
 
 FROM node:20-alpine AS deps
-
+RUN apk add --no-cache openssl
 # Install dependencies needed for native modules
 RUN apk add --no-cache libc6-compat python3 make g++
 
@@ -37,7 +37,7 @@ COPY --from=deps /app/package*.json ./
 
 # Copy source code
 COPY . .
-
+RUN npx prisma generate --schema=./libs/shared/prisma/schema.prisma
 # Build the API using NX
 # This will compile TypeScript and bundle the application
 RUN npx nx build api

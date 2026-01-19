@@ -1,9 +1,31 @@
-/**
- * Shared Types for Email-WhatsApp Bridge
- *
- * This file contains common TypeScript types and interfaces used across
- * both the frontend and backend applications.
- */
+import { 
+  User as PrismaUser, 
+  UserPreferences as PrismaUserPreferences, 
+  CronJob as PrismaCronJob,
+  UsageStat as PrismaUsageStat,
+  Account as PrismaAccount
+} from '@prisma/client';
+
+// ==========================================
+// Database Models (Source: Prisma)
+// ==========================================
+
+// Re-export specific types to be used by Frontend and Backend
+export type User = PrismaUser;
+export type UserPreferences = PrismaUserPreferences;
+export type CronJob = PrismaCronJob;
+export type UsageStat = PrismaUsageStat;
+export type Account = PrismaAccount;
+
+// Extended User type including relations for Frontend use
+export type UserWithPreferences = User & {
+  preferences: UserPreferences | null;
+  cronJob: CronJob | null;
+};
+
+// ==========================================
+// External API Types (Gmail, WhatsApp, etc.)
+// ==========================================
 
 // ===== Email Types =====
 
@@ -71,36 +93,6 @@ export interface SendWhatsAppMessageRequest {
   to: string;
   message: string;
   emailId?: string;
-}
-
-// ===== User Types =====
-
-/**
- * User account with authentication and notification preferences
- */
-export interface User {
-  id: string;
-  email: string;
-  phoneNumber: string;
-  isActive: boolean;
-  gmailAccessToken?: string;
-  gmailRefreshToken?: string;
-  preferences: UserPreferences;
-  createdAt: string;
-  updatedAt: string;
-}
-
-/**
- * User notification preferences
- */
-export interface UserPreferences {
-  notifyOnNewEmail: boolean;
-  notifyOnSpecificSenders: string[];
-  notifyOnLabels: string[];
-  digestMode: boolean;          // Send summary instead of individual emails
-  digestFrequency?: 'hourly' | 'daily' | 'weekly';
-  quietHoursStart?: string;     // HH:MM format
-  quietHoursEnd?: string;       // HH:MM format
 }
 
 // ===== API Response Types =====

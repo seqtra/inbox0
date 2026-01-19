@@ -31,8 +31,9 @@
     "src/**/*.jsx",
     "../../apps/frontend/.next/types/**/*.ts",
     "../../dist/apps/frontend/.next/types/**/*.ts",
-    "next-env.d.ts"
-  ],
+    "next-env.d.ts", 
+    "next-auth.d.ts" ,
+    ".next/types/**/*.ts" ],
   "exclude": [
     "out-tsc",
     "dist",

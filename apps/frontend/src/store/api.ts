@@ -13,7 +13,8 @@ import type {
   EmailFilters,
   WhatsAppMessage,
   SendWhatsAppMessageRequest,
-  User,
+  UserWithPreferences, // Imported for the /me response
+  UserPreferences,     // Imported for the mutation argument
   ApiResponse,
 } from '@email-whatsapp-bridge/shared';
 
@@ -90,24 +91,28 @@ export const api = createApi({
 
     /**
      * Get current user information
+     * Returns UserWithPreferences because the backend includes the relation
      */
-    getCurrentUser: builder.query<ApiResponse<User>, void>({
+    getCurrentUser: builder.query<ApiResponse<UserWithPreferences>, void>({
       query: () => '/user/me',
       providesTags: ['User'],
     }),
 
     /**
      * Update user preferences
+     * Takes Partial<UserPreferences> and returns the updated Preferences object
      */
     updateUserPreferences: builder.mutation<
-      ApiResponse<User>,
-      Partial<User['preferences']>
+      ApiResponse<UserPreferences>,
+      Partial<UserPreferences>
     >({
       query: (preferences) => ({
         url: '/user/preferences',
         method: 'PATCH',
         body: preferences,
       }),
+      // Invalidating 'User' triggers a re-fetch of getCurrentUser, 
+      // ensuring the UI reflects the new state globally.
       invalidatesTags: ['User'],
     }),
 
