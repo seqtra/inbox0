@@ -10,7 +10,7 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
-import { api } from './api';
+import { api } from '../shared/api/api';
 
 /**
  * Configure and create the Redux store
