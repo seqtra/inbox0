@@ -6,7 +6,8 @@ import { useSearchParams } from 'next/navigation';
 // 1. This component handles the logic and UI
 function LandingContent() {
   const searchParams = useSearchParams();
-  const isConnected = searchParams.get('status') === 'connected';
+  const isConnected = searchParams?.get('status') === 'connected';
+
 
   const handleLogin = () => {
     window.location.href = 'http://localhost:3000/api/auth/google';

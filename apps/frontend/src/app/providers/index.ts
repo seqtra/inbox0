@@ -10,8 +10,8 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
-import { api } from '../shared/api/api';
-
+import { api } from '../../shared/api/api';
+import { setupListeners } from '@reduxjs/toolkit/query';
 /**
  * Configure and create the Redux store
  *
@@ -29,7 +29,7 @@ export const store = configureStore({
     // Add RTK Query middleware for caching, invalidation, polling, etc.
     getDefaultMiddleware().concat(api.middleware),
 });
-
+setupListeners(store.dispatch);
 /**
  * Type definitions for TypeScript
  * These allow proper typing throughout the application
