@@ -20,18 +20,19 @@ export default async function (fastify: FastifyInstance) {
     });
 
     // Lazy initialization if records missing
-    if (user && !user.preferences) {
-        await prisma.userPreferences.create({ data: { userId } });
-        // Re-fetch or manually attach (omitted for brevity)
+    let preferences = user.preferences;
+    if (user && !preferences) {
+        preferences = await prisma.userPreferences.create({ data: { userId } });
     }
-    if (user && !user.cronJob) {
+    
+    let cronJob = user.cronJob;
+    if (user && !cronJob) {
         const defaultCron = "0 9 * * *"; // 9 AM
-        
-        // Calculate next run
+        // Note: Defaulting to UTC is acceptable for initial lazy-create
         const interval = cronParser.parseExpression(defaultCron, { utc: true });
         const nextRun = interval.next().toDate();
 
-        await prisma.cronJob.create({ 
+        cronJob = await prisma.cronJob.create({ 
             data: { 
               userId, 
               cronExpression: defaultCron,
@@ -40,9 +41,16 @@ export default async function (fastify: FastifyInstance) {
         });
     }
 
-    return { success: true, data: user };
+    // Return the updated structures, effectively "attaching" them
+    return { 
+      success: true, 
+      data: { 
+        ...user, 
+        preferences, 
+        cronJob 
+      } 
+    };
   });
-
   // PATCH /me/preferences
   fastify.patch('/me/preferences', async (request, reply) => {
     const userId = request.user!.id;

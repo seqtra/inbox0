@@ -7,7 +7,6 @@ const path = require('path');
  **/
 const nextConfig = {
   nx: {
-    svgr: false,
   },
   // FIX 1: Explicitly transpile the shared library
   transpilePackages: ['@email-whatsapp-bridge/shared'],

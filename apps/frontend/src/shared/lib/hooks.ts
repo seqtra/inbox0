@@ -9,7 +9,7 @@
  */
 
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from '../../app/providers';
+import type { RootState, AppDispatch } from '../../app/providers/store';
 
 /**
  * Typed version of useDispatch hook
