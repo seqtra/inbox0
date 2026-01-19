@@ -3,8 +3,8 @@ import cookie from '@fastify/cookie';
 import sensible from './plugins/sensible';
 import authMiddleware from './plugins/auth-middleware';
 import root from './routes/root';
-import auth from './routes/auth';
 import users from './routes/users';
+import emails from './routes/emails';
 /* eslint-disable-next-line */
 export interface AppOptions {}
 
@@ -18,6 +18,6 @@ export async function app(fastify: FastifyInstance, opts: AppOptions) {
 
   // MANUALLY REGISTER ROUTES
   fastify.register(root);
-  fastify.register(auth);
   fastify.register(users, { prefix: '/api/users' });
+  fastify.register(emails, { prefix: '/api/emails' });
 }

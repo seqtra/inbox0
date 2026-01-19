@@ -90,6 +90,21 @@ export const api = createApi({
     }),
 
     /**
+     * Update user schedule (Cron & Timezone)
+     */
+    updateUserSchedule: builder.mutation<
+      ApiResponse<any>, 
+      { cronExpression: string; timezone: string }
+    >({
+      query: (body) => ({
+        url: '/user/me/schedule',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['User'], // Refetch user data after update
+    }),
+
+    /**
      * Get current user information
      * Returns UserWithPreferences because the backend includes the relation
      */
@@ -147,4 +162,5 @@ export const {
   useGetCurrentUserQuery,
   useUpdateUserPreferencesMutation,
   useSyncEmailsMutation,
+  useUpdateUserScheduleMutation,
 } = api;
