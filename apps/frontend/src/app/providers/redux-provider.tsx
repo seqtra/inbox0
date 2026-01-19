@@ -10,11 +10,7 @@
 'use client';
 
 import { Provider } from 'react-redux';
-import { store } from '.';
-
-interface ReduxProviderProps {
-  children: React.ReactNode;
-}
+import { store } from './store'; // Import from the new store.ts file
 
 /**
  * Redux Provider wrapper
@@ -27,6 +23,6 @@ interface ReduxProviderProps {
  *   <YourApp />
  * </ReduxProvider>
  */
-export function ReduxProvider({ children }: ReduxProviderProps) {
+export function ReduxProvider({ children }: { children: React.ReactNode }) {
   return <Provider store={store}>{children}</Provider>;
 }

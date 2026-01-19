@@ -1,9 +1,7 @@
 import './global.css';
-import { ReduxProvider } from './providers/redux-provider';
-export const metadata = {
-  title: 'Welcome to inbox-0',
-  description: 'AI-Powered WhatsApp Bridge',
-};
+import { Providers } from './providers'; // Imports from index.tsx automatically
+
+
 
 export default function RootLayout({
   children,
@@ -13,10 +11,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {/* 2. Wrap the children in the ReduxProvider */}
-        <ReduxProvider>
+        <Providers>
           {children}
-        </ReduxProvider>
+        </Providers>
       </body>
     </html>
   );

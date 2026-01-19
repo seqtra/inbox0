@@ -1,3 +1,5 @@
+// apps/frontend/src/app/api/auth/[...nextauth]/route.ts
+
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
@@ -11,9 +13,10 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GMAIL_CLIENT_ID!,
       clientSecret: process.env.GMAIL_CLIENT_SECRET!,
+      // [FIX] Allow merging accounts with the same email
+      allowDangerousEmailAccountLinking: true, 
       authorization: {
         params: {
-          // Request offline access to get a Refresh Token for the backend workers
           access_type: "offline",
           prompt: "consent",
           response_type: "code",
@@ -25,20 +28,18 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
-        session.user.id = user.id; // Expose ID to client
+        session.user.id = user.id;
       }
       return session;
     },
-    // When a user registers, create their default CronJob and Preferences
     async signIn({ user, account, profile }) {
-        // Note: PrismaAdapter usually handles user creation, but we can hook in 
-        // to ensure relations exist or use Prisma Middleware/Triggers.
-        // For simplicity, we assume the backend API ensures these exist on first data fetch.
-        return true;
+      // The PrismaAdapter handles the account creation/linking automatically
+      // if 'allowDangerousEmailAccountLinking' is true or if the user is already logged in.
+      return true;
     }
   },
   session: {
-    strategy: "database", // Use DB sessions for security and consistency
+    strategy: "database",
   },
 };
 

@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import cronParser from 'cron-parser'; 
 
 const prisma = new PrismaClient();
 
@@ -24,8 +25,18 @@ export default async function (fastify: FastifyInstance) {
         // Re-fetch or manually attach (omitted for brevity)
     }
     if (user && !user.cronJob) {
+        const defaultCron = "0 9 * * *"; // 9 AM
+        
+        // Calculate next run
+        const interval = cronParser.parseExpression(defaultCron, { utc: true });
+        const nextRun = interval.next().toDate();
+
         await prisma.cronJob.create({ 
-            data: { userId, nextRunAt: new Date() /* Logic to calc next run */ } 
+            data: { 
+              userId, 
+              cronExpression: defaultCron,
+              nextRunAt: nextRun 
+            } 
         });
     }
 
@@ -54,7 +65,12 @@ export default async function (fastify: FastifyInstance) {
     const userId = request.user!.id;
     const { cronExpression, timezone } = request.body as any;
 
-    // 1. Update Timezone
+    // 1. Fetch current preferences to get the correct timezone if not provided
+    // We need the timezone to calculate the cron accurately (e.g. 9 AM in London vs 9 AM in NYC)
+    const existingPrefs = await prisma.userPreferences.findUnique({ where: { userId }});
+    const targetTimezone = timezone || existingPrefs?.timezone || 'UTC';
+
+    // Update Timezone if provided
     if (timezone) {
         await prisma.userPreferences.update({
             where: { userId },
@@ -62,18 +78,28 @@ export default async function (fastify: FastifyInstance) {
         });
     }
 
-    // 2. Update Cron
-    // Here you would also update your actual Job Queue (e.g., BullMQ)
-    const updatedCron = await prisma.cronJob.update({
-        where: { userId },
-        data: { 
-            cronExpression,
-            // Recalculate nextRunAt based on new expression + timezone
-            nextRunAt: new Date() // Placeholder logic
-        }
-    });
+    // [FIX]: Calculate accurate nextRunAt
+    try {
+      const interval = cronParser.parseExpression(cronExpression, {
+        tz: targetTimezone, // Use the user's timezone!
+      });
+      
+      const nextRunAt = interval.next().toDate();
 
-    return { success: true, data: updatedCron };
+      const updatedCron = await prisma.cronJob.update({
+          where: { userId },
+          data: { 
+              cronExpression,
+              nextRunAt: nextRunAt 
+          }
+      });
+
+      return { success: true, data: updatedCron };
+
+    } catch (err) {
+      // Handle invalid cron expression
+      return reply.status(400).send({ success: false, error: "Invalid Cron Expression" });
+    }
   });
 
   // GET /me/stats
