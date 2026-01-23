@@ -11,6 +11,14 @@ const nextConfig = {
   // FIX 1: Explicitly transpile the shared library
   transpilePackages: ['@email-whatsapp-bridge/shared'],
   
+  // Workaround for macOS network interface detection issue
+  // This prevents Next.js from trying to auto-detect network interfaces
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+  
   // FIX 2: Strict Webpack Aliases to force Single React Instance
   webpack: (config) => {
     const rootNodeModules = path.resolve(__dirname, '../../node_modules');

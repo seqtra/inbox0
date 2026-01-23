@@ -113,3 +113,69 @@ model UsageStat {
 
   @@unique([userId, date])
 }
+
+// === Blog/CMS Models ===
+
+enum BlogPostStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BlogTopicStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  GENERATED // Topic has been converted to a BlogPost
+}
+
+model BlogPost {
+  id          String         @id @default(cuid())
+  title       String
+  slug        String         @unique // For URL: inbox-0.com/blog/best-email-tools
+  content     String         @db.Text // The full blog content (Markdown)
+  seoTitle    String?        // Meta title for Google (max 60 chars)
+  seoDesc     String?        // Meta description (max 160 chars)
+  status      BlogPostStatus @default(DRAFT)
+  
+  // Audit trail
+  authorId    String?        // User who approved/created
+  publishedAt DateTime?      // When it went live
+  
+  // Relationship to source topic (if AI-generated from trend)
+  topicId     String?        @unique
+  topic       BlogTopic?     @relation(fields: [topicId], references: [id])
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status])
+  @@index([publishedAt])
+  @@map("blog_posts")
+}
+
+model BlogTopic {
+  id              String          @id @default(cuid())
+  title           String
+  angle           String?
+  sourceUrl       String?         // Original RSS link
+  sourceHeadline  String?         // Original headline from RSS
+  status          BlogTopicStatus @default(PENDING)
+  
+  // Audit trail
+  approvedBy      String?         // User ID who approved
+  approvedAt      DateTime?
+  rejectedReason  String?         // Why it was rejected
+  
+  // Generated post relationship
+  generatedPost   BlogPost?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Prevent duplicate topics from same source
+  @@unique([sourceUrl])
+  @@index([status])
+  @@map("blog_topics")
+}

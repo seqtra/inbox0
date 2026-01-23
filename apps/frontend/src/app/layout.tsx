@@ -1,5 +1,5 @@
 import './global.css';
-import { Providers } from './providers'; // Imports from index.tsx automatically
+import { Providers } from './providers/index';
 
 
 

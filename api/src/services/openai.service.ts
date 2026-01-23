@@ -44,6 +44,28 @@ export class OpenAIService {
   }
 
   /**
+   * Generic chat completion method for flexible OpenAI requests.
+   *
+   * @param options - Chat completion options including messages and optional response_format
+   * @returns The raw OpenAI chat completion response
+   */
+  async chatCompletion(options: {
+    messages: { role: 'system' | 'user' | 'assistant'; content: string }[];
+    response_format?: { type: 'json_object' | 'text' };
+    model?: string;
+  }) {
+    if (!OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is missing');
+    }
+
+    return this.client.chat.completions.create({
+      model: options.model ?? 'gpt-4o-2024-08-06',
+      messages: options.messages,
+      response_format: options.response_format,
+    });
+  }
+
+  /**
    * Analyze an email to generate a summary, priority, and action items.
    *
    * @param email - The email object to analyze

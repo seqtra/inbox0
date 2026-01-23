@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { PrismaClient } from '@prisma/client';
-import cronParser from 'cron-parser'; 
+import { CronExpressionParser } from 'cron-parser'; 
 
 const prisma = new PrismaClient();
 
@@ -19,17 +19,21 @@ export default async function (fastify: FastifyInstance) {
       include: { preferences: true, cronJob: true }
     });
 
+    if (!user) {
+      return reply.status(404).send({ error: 'User not found' });
+    }
+
     // Lazy initialization if records missing
     let preferences = user.preferences;
-    if (user && !preferences) {
+    if (!preferences) {
         preferences = await prisma.userPreferences.create({ data: { userId } });
     }
     
     let cronJob = user.cronJob;
-    if (user && !cronJob) {
+    if (!cronJob) {
         const defaultCron = "0 9 * * *"; // 9 AM
         // Note: Defaulting to UTC is acceptable for initial lazy-create
-        const interval = cronParser.parseExpression(defaultCron, { utc: true });
+        const interval = CronExpressionParser.parse(defaultCron, { tz: 'UTC' });
         const nextRun = interval.next().toDate();
 
         cronJob = await prisma.cronJob.create({ 
@@ -88,7 +92,7 @@ export default async function (fastify: FastifyInstance) {
 
     // [FIX]: Calculate accurate nextRunAt
     try {
-      const interval = cronParser.parseExpression(cronExpression, {
+      const interval = CronExpressionParser.parse(cronExpression, {
         tz: targetTimezone, // Use the user's timezone!
       });
       
