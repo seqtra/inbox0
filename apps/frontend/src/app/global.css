@@ -102,3 +102,30 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Landing hero gradient background (from inbox-0-new-frontend) */
+@layer components {
+  .hero-gradient-bg {
+    @apply relative overflow-hidden bg-bg-warm;
+  }
+  .hero-gradient-bg::before {
+    content: '';
+    @apply absolute -top-1/2 -right-1/5 h-[600px] w-[600px] rounded-full;
+    background: radial-gradient(circle, rgba(204, 177, 247, 0.08) 0%, transparent 70%);
+    animation: float 20s ease-in-out infinite;
+  }
+  .hero-gradient-bg::after {
+    content: '';
+    @apply absolute -bottom-[30%] -left-[10%] h-[500px] w-[500px] rounded-full;
+    background: radial-gradient(circle, rgba(255, 239, 153, 0.08) 0%, transparent 70%);
+    animation: float 15s ease-in-out infinite reverse;
+  }
+  @keyframes float {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(-30px, 30px) scale(1.1);
+    }
+  }
+}
