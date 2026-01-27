@@ -8,7 +8,7 @@
  * @see https://developer.atlassian.com/cloud/trello/rest/api-group-cards/
  */
 
-import type { TrelloCard, CreateTrelloCardRequest } from '@email-whatsapp-bridge/shared';
+import type { TrelloCard } from '@email-whatsapp-bridge/shared';
 
 const TRELLO_API_KEY = process.env.TRELLO_API_KEY || '';
 const TRELLO_TOKEN = process.env.TRELLO_TOKEN || '';
