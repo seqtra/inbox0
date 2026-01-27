@@ -219,14 +219,3 @@ export interface DatabaseConfig {
   password: string;
   ssl: boolean;
 }
-
-/**
- * AWS configuration
- */
-export interface AwsConfig {
-  region: string;
-  accessKeyId?: string;
-  secretAccessKey?: string;
-  useLocalStack: boolean;
-  localStackEndpoint?: string;
-}

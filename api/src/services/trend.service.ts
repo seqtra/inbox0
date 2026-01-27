@@ -1,5 +1,5 @@
 import Parser from 'rss-parser';
-import { OpenAIService } from './openai.service';
+import type { AIService } from './ai/types';
 
 // Response type for trend scouting
 export interface TrendStory {
@@ -21,7 +21,7 @@ export class TrendService {
   private parser = new Parser({
     timeout: RSS_TIMEOUT_MS,
   });
-  private openai: OpenAIService;
+  private ai: AIService;
 
   // Google News RSS search queries targeting our niche: busy professionals and executives
   private sources = [
@@ -42,8 +42,8 @@ export class TrendService {
     'workflow efficiency',
   ];
 
-  constructor(openaiService: OpenAIService) {
-    this.openai = openaiService;
+  constructor(aiService: AIService) {
+    this.ai = aiService;
   }
 
   async findNewTopics(): Promise<TrendResult> {
@@ -162,7 +162,7 @@ export class TrendService {
     `;
 
     try {
-      const result = await this.openai.chatCompletion({
+      const result = await this.ai.chatCompletion({
         messages: [{ role: 'user', content: prompt + '\n\nHeadlines:\n' + headlines }],
         response_format: { type: 'json_object' }
       });

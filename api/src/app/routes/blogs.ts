@@ -1,11 +1,11 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient, BlogPostStatus, BlogTopicStatus } from '@prisma/client';
-import { OpenAIService } from '../../services/openai.service';
+import { getAIService } from '../../services/ai';
 import { TrendService } from '../../services/trend.service';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
-const openai = new OpenAIService();
+const ai = getAIService();
 
 // Validation schemas
 const GenerateBlogSchema = z.object({
@@ -99,7 +99,7 @@ export default async function (instance: FastifyInstance) {
     `;
 
     try {
-      const completion = await openai.chatCompletion({
+      const completion = await ai.chatCompletion({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Topic: ${topicText}` }
@@ -242,7 +242,7 @@ export default async function (instance: FastifyInstance) {
 
   // 5. Scout Trends - Find new blog topics (Protected - Admin only)
   fastify.get('/admin/scout-trends', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const trendService = new TrendService(openai);
+    const trendService = new TrendService(ai);
 
     try {
       const ideas = await trendService.findNewTopics();
@@ -465,7 +465,7 @@ export default async function (instance: FastifyInstance) {
             - seoDescription: Meta description with call-to-action (max 160 chars)
           `;
           
-          const completion = await openai.chatCompletion({
+          const completion = await ai.chatCompletion({
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: `Topic: ${approvedTopic.title}. Angle: ${approvedTopic.angle}` }
@@ -695,7 +695,7 @@ export default async function (instance: FastifyInstance) {
       `;
 
       try {
-        const completion = await openai.chatCompletion({
+        const completion = await ai.chatCompletion({
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: `Topic: ${topicText}` }
@@ -837,7 +837,7 @@ export default async function (instance: FastifyInstance) {
       }
 
       // Real mode: Use actual RSS feeds and OpenAI
-      const trendService = new TrendService(openai);
+      const trendService = new TrendService(ai);
 
       try {
         const ideas = await trendService.findNewTopics();

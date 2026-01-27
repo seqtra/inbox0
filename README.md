@@ -126,8 +126,7 @@ email-whatsapp-bridge/
 │   └── outputs.tf            # Output values
 │
 ├── scripts/                  # Helper scripts
-│   ├── init-db.sql          # Database schema
-│   └── localstack-init.sh   # LocalStack setup
+│   └── init-db.sql          # Database schema
 │
 ├── docker-compose.yml        # Local development stack
 ├── .env.example              # Environment variables template

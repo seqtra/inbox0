@@ -3,11 +3,10 @@
 import { PrismaClient } from '@prisma/client';
 import { FastifyInstance } from 'fastify';
 import { GmailService } from '../../services/gmail.service';
-import { OpenAIService } from '../../services/openai.service';
+import { getAIService } from '../../services/ai';
 import type { Email } from '@email-whatsapp-bridge/shared';
 
 const prisma = new PrismaClient();
-const openAI = new OpenAIService();
 
 /** Get Google OAuth tokens for a user from the Account table */
 async function getGoogleTokens(userId: string): Promise<{
@@ -107,7 +106,7 @@ export default async function (fastify: FastifyInstance) {
     }
 
     try {
-      const analysis = await openAI.analyzeEmail(email);
+      const analysis = await getAIService().analyzeEmail(email);
       return { success: true, data: analysis };
     } catch (error) {
       request.log.error(error);

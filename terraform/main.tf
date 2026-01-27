@@ -203,11 +203,10 @@ module "api_service" {
   target_group_arn    = module.alb.api_target_group_arn
 
   # Environment variables
+  # Note: Terraform stack is for reference/legacy; VPS deployment (e.g. DigitalOcean) is the target.
   environment_variables = {
     NODE_ENV     = var.environment
     DATABASE_URL = "postgresql://${var.database_username}:${var.database_password}@${module.database.endpoint}/${var.database_name}"
-    AWS_REGION   = var.aws_region
-    USE_LOCALSTACK = "false"
   }
 
   # Secrets from Secrets Manager
