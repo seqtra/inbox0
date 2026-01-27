@@ -1,6 +1,14 @@
 import { TrendService } from './trend.service';
 import type { AIService } from './ai/types';
 
+const mockParseURL = jest.fn();
+
+jest.mock('rss-parser', () => {
+  return jest.fn().mockImplementation(() => ({
+    parseURL: mockParseURL,
+  }));
+});
+
 describe('TrendService', () => {
   const mockAI: AIService = {
     analyzeEmail: jest.fn(),
@@ -9,6 +17,12 @@ describe('TrendService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockParseURL.mockResolvedValue({
+      items: [
+        { title: 'email productivity tips for busy executives', link: 'https://example.com/1' },
+        { title: 'inbox zero strategies that work', link: 'https://example.com/2' },
+      ],
+    });
   });
 
   it('findNewTopics returns relevant_stories from AI response', async () => {

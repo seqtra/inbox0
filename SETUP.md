@@ -52,7 +52,7 @@ In **`.env`** (at the repo root), set at least:
 | `DATABASE_URL` | `postgresql://devuser:devpassword@localhost:5432/email_whatsapp_bridge` (matches Docker Postgres below) |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3000/api` (optional if frontend and API are on same host; used for API calls) |
 
-Other vars (Twilio, Trello, OpenAI, AWS) are only needed for those features.
+Other vars (Twilio, Trello, **Anthropic** for AI features) are only needed for those features. Set `ANTHROPIC_API_KEY` for email analysis and blog/trend AI.
 
 ---
 
@@ -186,6 +186,9 @@ If the blog admin shows errors:
 | PostgreSQL | `docker-compose up -d postgres` | 5432 |
 | API | `npx nx serve api` | 3000 |
 | Frontend | `npx nx run @email-whatsapp-bridge/frontend:dev` or `cd apps/frontend && npm run dev` | 4200 |
+| Nginx (full Docker only) | `docker-compose up` — reverse proxy for API + frontend | 80 |
+
+**Run API unit tests:** `npx nx test api`
 
 ---
 
@@ -221,10 +224,14 @@ If the blog admin shows errors:
 
 ## 10. Optional: run everything with Docker
 
-To run API + frontend + Postgres via Docker Compose (e.g. for consistency):
+To run **Postgres + API + frontend + Nginx** via Docker Compose:
 
 ```bash
 docker-compose up
 ```
 
-Then open **http://localhost:4200**. For local development and testing sign-in, the manual flow (Postgres + `nx serve api` + frontend dev server) is usually easier so you can change env and code without rebuilding images.
+- **Nginx** is the single entrypoint on **port 80**. Open **http://localhost** (not :4200).
+- `/` is proxied to the frontend, `/api` to the Fastify API. `NEXT_PUBLIC_API_URL` defaults to `http://localhost/api` in compose.
+- API and frontend are not exposed on 3000/4200 when using full compose; all traffic goes through Nginx.
+
+For local development and testing sign-in, the manual flow (Postgres + `nx serve api` + frontend dev server on 4200) is usually easier so you can change env and code without rebuilding images.

@@ -11,6 +11,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../coverage/api',
   testMatch: ['**/*.spec.ts', '**/*.test.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   moduleNameMapper: {
     '^@email-whatsapp-bridge/shared$': path.join(__dirname, '..', 'libs', 'shared', 'src', 'index.ts'),
   },
