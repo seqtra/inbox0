@@ -7,6 +7,7 @@ import root from './routes/root';
 import users from './routes/users';
 import emails from './routes/emails';
 import blogs from './routes/blogs';
+import trello from './routes/trello';
 /* eslint-disable-next-line */
 export interface AppOptions {}
 
@@ -27,5 +28,6 @@ export async function app(fastify: FastifyInstance, opts: AppOptions) {
   fastify.register(root);
   fastify.register(users, { prefix: '/api/users' });
   fastify.register(emails, { prefix: '/api/emails' });
+  fastify.register(trello, { prefix: '/api/trello' });
   fastify.register(blogs, { prefix: '/api' }); // Blog routes under /api
 }

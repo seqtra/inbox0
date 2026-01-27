@@ -595,6 +595,7 @@ export default async function (instance: FastifyInstance) {
     
     // Dev: List all topics (no auth)
     fastify.get('/dev/admin/topics', async (request) => {
+      request.log.info({ url: request.url }, 'Blog route hit: GET /dev/admin/topics');
       const { status } = request.query as { status?: string };
       return prisma.blogTopic.findMany({
         where: status ? { status: status as BlogTopicStatus } : undefined,

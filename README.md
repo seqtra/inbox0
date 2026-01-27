@@ -10,6 +10,7 @@ A full-stack application that analyzes emails from Gmail and delivers notificati
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
+- **[Full setup guide (frontend, backend, Postgres, sign-in, admin)](SETUP.md)** — step-by-step for running and testing everything locally
 - [Development](#development)
 - [Deployment](#deployment)
 - [Learning Resources](#learning-resources)

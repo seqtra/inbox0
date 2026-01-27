@@ -164,6 +164,50 @@ export interface TwilioConfig {
   whatsappNumber: string;
 }
 
+// ===== Trello Types =====
+
+/**
+ * Trello card (board item)
+ */
+export interface TrelloCard {
+  id: string;
+  name: string;
+  desc: string;
+  idList: string;
+  url: string;
+  shortUrl: string;
+  closed: boolean;
+  dateLastActivity: string;
+}
+
+/**
+ * Trello list (column on a board)
+ */
+export interface TrelloList {
+  id: string;
+  name: string;
+  idBoard: string;
+  pos: number;
+  closed: boolean;
+}
+
+/**
+ * Trello API configuration
+ */
+export interface TrelloConfig {
+  apiKey: string;
+  token: string;
+}
+
+/**
+ * Request body for creating a Trello card
+ */
+export interface CreateTrelloCardRequest {
+  listId: string;
+  title: string;
+  description: string;
+}
+
 /**
  * Database configuration
  */

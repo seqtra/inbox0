@@ -24,6 +24,6 @@ export const api = createApi({
     },
   }),
   // Define tag types centrally so they can be provided/invalidated by split endpoints
-  tagTypes: ['Email', 'WhatsAppMessage', 'User'],
+  tagTypes: ['Email', 'WhatsAppMessage', 'User', 'TrelloCard'],
   endpoints: () => ({}), // Empty endpoints here; injected in other files
 });

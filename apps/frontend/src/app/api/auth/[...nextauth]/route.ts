@@ -9,6 +9,8 @@ const prisma = new PrismaClient();
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  // Use the request host for callbacks (helps when using 127.0.0.1 vs localhost)
+  trustHost: true,
   providers: [
     GoogleProvider({
       clientId: process.env.GMAIL_CLIENT_ID!,

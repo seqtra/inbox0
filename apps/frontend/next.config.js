@@ -19,6 +19,18 @@ const nextConfig = {
     },
   },
   
+  // Keep /api/auth/* on Next.js (NextAuth); proxy all other /api/* to Fastify backend
+  async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000';
+    return [
+      // NextAuth routes — handle locally (no proxy)
+      { source: '/api/auth', destination: '/api/auth' },
+      { source: '/api/auth/:path*', destination: '/api/auth/:path*' },
+      // All other API routes → backend
+      { source: '/api/:path*', destination: `${backendUrl}/api/:path*` },
+    ];
+  },
+
   // FIX 2: Strict Webpack Aliases to force Single React Instance
   webpack: (config) => {
     const rootNodeModules = path.resolve(__dirname, '../../node_modules');

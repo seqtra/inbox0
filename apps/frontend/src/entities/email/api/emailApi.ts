@@ -2,6 +2,7 @@ import { api } from '../../../shared/api/api';
 import type {
   Email,
   EmailFilters,
+  EmailSummary,
   ApiResponse,
 } from '@email-whatsapp-bridge/shared';
 
@@ -36,6 +37,17 @@ const emailApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Email'],
     }),
+
+    /**
+     * Analyze an email (AI summary, priority, category)
+     */
+    analyzeEmail: builder.mutation<ApiResponse<EmailSummary>, Email>({
+      query: (email) => ({
+        url: '/emails/analyze',
+        method: 'POST',
+        body: email,
+      }),
+    }),
   }),
 });
 
@@ -43,4 +55,5 @@ export const {
   useGetEmailsQuery,
   useGetEmailByIdQuery,
   useSyncEmailsMutation,
+  useAnalyzeEmailMutation,
 } = emailApi;
