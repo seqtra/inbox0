@@ -2,7 +2,8 @@ import { Metadata } from 'next';
 import ReactMarkdown from 'react-markdown';
 import { notFound } from 'next/navigation';
 
-const API_URL = process.env.API_URL || 'http://localhost:3333';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://inbox0.com';
 
 interface BlogPost {
@@ -20,7 +21,7 @@ interface BlogPost {
 // Fetch single post
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
-    const res = await fetch(`${API_URL}/blogs/${slug}`, {
+    const res = await fetch(`${API_BASE}/api/blogs/${slug}`, {
       next: { revalidate: 3600 } // ISR: Re-generate page every hour
     });
     if (!res.ok) return null;
@@ -34,7 +35,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 // Fetch all posts for static generation
 async function getAllPosts(): Promise<BlogPost[]> {
   try {
-    const res = await fetch(`${API_URL}/blogs`, {
+    const res = await fetch(`${API_BASE}/api/blogs`, {
       next: { revalidate: 3600 }
     });
     if (!res.ok) return [];
