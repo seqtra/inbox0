@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "start:frontend": "next start apps/frontend",
-    "postinstall": "prisma generate --schema=libs/shared/prisma/schema.prisma"
+    "postinstall": "npx prisma generate --schema=libs/shared/prisma/schema.prisma"
   },
   "private": true,
   "dependencies": {
@@ -38,7 +38,8 @@
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",
     "twilio": "^5.11.2",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "prisma": "^5.22.0"
   },
   "overrides": {
     "react": "$react",
@@ -90,7 +91,6 @@
     "nx": "22.3.3",
     "postcss": "^8.5.6",
     "prettier": "~3.6.2",
-    "prisma": "^5.22.0",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
     "tslib": "^2.3.0",
