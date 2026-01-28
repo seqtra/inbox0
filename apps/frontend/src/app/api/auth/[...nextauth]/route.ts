@@ -7,9 +7,9 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
   adapter: PrismaAdapter(prisma),
-  // Use the request host for callbacks (helps when using 127.0.0.1 vs localhost)
+  // Use the request host for callbacks (required on Vercel; accepted at runtime by next-auth)
   trustHost: true,
   providers: [
     GoogleProvider({
