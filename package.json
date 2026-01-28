@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "start:frontend": "next start apps/frontend",
-    "postinstall": "npx prisma generate --schema=libs/shared/prisma/schema.prisma"
+    "postinstall": "npx prisma@5.22.0 generate --schema=libs/shared/prisma/schema.prisma"
   },
   "private": true,
   "dependencies": {
