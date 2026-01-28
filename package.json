@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "start:frontend": "next start apps/frontend"
+    "start:frontend": "next start apps/frontend",
+    "postinstall": "prisma generate --schema=libs/shared/prisma/schema.prisma"
   },
   "private": true,
   "dependencies": {
