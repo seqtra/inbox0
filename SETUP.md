@@ -235,3 +235,23 @@ docker-compose up
 - API and frontend are not exposed on 3000/4200 when using full compose; all traffic goes through Nginx.
 
 For local development and testing sign-in, the manual flow (Postgres + `nx serve api` + frontend dev server on 4200) is usually easier so you can change env and code without rebuilding images.
+
+---
+
+## 11. Deploy frontend to Vercel
+
+The repo is an Nx monorepo; the Next.js app lives in **`apps/frontend`**. For Vercel to build and serve it correctly:
+
+1. **Root Directory**  
+   In the Vercel project → **Settings → General**, set **Root Directory** to **`apps/frontend`**.  
+   (Do **not** leave it as the repo root, or the build output will not be found.)
+
+2. **Include files outside Root**  
+   In **Settings → General**, under Root Directory, enable **“Include source files outside of the Root Directory in the Build Step”** so the build can use `libs/shared` and the root `node_modules` (e.g. Prisma).
+
+3. **Build & Install**  
+   - **Install Command:** leave default (`npm install`); Vercel runs this from the **repository root**, so root `postinstall` (e.g. `prisma generate`) runs.  
+   - **Build Command:** leave default (`npm run build`); with Root Directory `apps/frontend`, this runs `next build` in the app and writes `.next` in the right place.
+
+4. **Environment variables**  
+   Set at least `NEXTAUTH_SECRET`, `NEXTAUTH_URL` (your production URL), `DATABASE_URL`, and any OAuth/API keys the app needs (same as in `.env` locally).

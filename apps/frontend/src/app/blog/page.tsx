@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 
-const API_URL = process.env.API_URL || 'http://localhost:3333';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://inbox0.com';
 
 interface BlogPost {
@@ -17,7 +18,7 @@ interface BlogPost {
 // Fetch all published posts
 async function getAllPosts(): Promise<BlogPost[]> {
   try {
-    const res = await fetch(`${API_URL}/blogs`, {
+    const res = await fetch(`${API_BASE}/api/blogs`, {
       next: { revalidate: 3600 } // ISR: Re-generate every hour
     });
     if (!res.ok) return [];

@@ -5,11 +5,20 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
 
+// On Vercel, NEXTAUTH_URL is not expanded from ${VERCEL_URL} in the dashboard.
+// Derive it here so you can leave NEXTAUTH_URL unset or use the real URL.
+if (process.env.VERCEL_URL) {
+  const url = process.env.NEXTAUTH_URL;
+  if (!url?.startsWith("https://") || url.includes("${")) {
+    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+  }
+}
+
 const prisma = new PrismaClient();
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
   adapter: PrismaAdapter(prisma),
-  // Use the request host for callbacks (helps when using 127.0.0.1 vs localhost)
+  // Use the request host for callbacks (required on Vercel; accepted at runtime by next-auth)
   trustHost: true,
   providers: [
     GoogleProvider({

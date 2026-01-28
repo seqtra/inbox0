@@ -29,11 +29,10 @@
     "src/**/*.tsx",
     "src/**/*.js",
     "src/**/*.jsx",
-    "../../apps/frontend/.next/types/**/*.ts",
-    "../../dist/apps/frontend/.next/types/**/*.ts",
-    "next-env.d.ts", 
-    "next-auth.d.ts" ,
-    ".next/types/**/*.ts" ],
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    "next-auth.d.ts"
+  ],
   "exclude": [
     "out-tsc",
     "dist",
