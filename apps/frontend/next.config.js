@@ -8,8 +8,6 @@ const path = require('path');
 const nextConfig = {
   nx: {
   },
-  // Vercel expects Nx output at dist/apps/frontend/.next; Next defaults to .next
-  distDir: process.env.NODE_ENV === 'production' ? '../../dist/apps/frontend/.next' : '.next',
   // FIX 1: Explicitly transpile the shared library
   transpilePackages: ['@email-whatsapp-bridge/shared'],
   
