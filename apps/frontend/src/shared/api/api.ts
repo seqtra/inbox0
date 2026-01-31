@@ -14,6 +14,8 @@ export const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
+    // Include cookies (next-auth.session-token) for cross-origin requests
+    credentials: 'include',
     prepareHeaders: (headers) => {
       // Add authentication token if available
       const token = localStorage.getItem('auth_token');

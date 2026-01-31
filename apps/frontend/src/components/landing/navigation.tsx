@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import posthog from 'posthog-js';
 
 import { cn } from '@/shared/lib/utils';
 
@@ -66,8 +68,13 @@ export function Navigation({
   loginLabel = 'Log in',
   ctaLabel = 'Get Early Access',
 }: NavigationProps) {
+  const { data: session, status } = useSession();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const isAuthenticated = status === 'authenticated' && !!session;
+  const authHref = isAuthenticated ? '/dashboard' : loginHref;
+  const authLabel = isAuthenticated ? 'Dashboard' : loginLabel;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -133,20 +140,20 @@ export function Navigation({
               )
             )}
             <Link
-              href={loginHref}
+              href={authHref}
               className="font-body text-[0.9375rem] font-medium text-gray-dark no-underline transition-colors hover:text-navy md:hidden"
               onClick={closeMobileMenu}
             >
-              {loginLabel}
+              {authLabel}
             </Link>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
-              href={loginHref}
+              href={authHref}
               className="hidden font-body text-[0.9375rem] font-medium text-gray-dark no-underline transition-colors hover:text-navy sm:inline-block"
             >
-              {loginLabel}
+              {authLabel}
             </Link>
             <button
               type="button"
@@ -154,6 +161,7 @@ export function Navigation({
               data-tally-open={tallyFormId}
               data-tally-emoji-text="👋"
               data-tally-emoji-animation="wave"
+              onClick={() => posthog.capture('cta_get_early_access_click', { location: 'navigation' })}
             >
               {ctaLabel}
             </button>

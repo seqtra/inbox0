@@ -5,8 +5,8 @@ const path = require('path');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = '127.0.0.1';
-const port = 4200;
+const hostname = process.env.HOST || '0.0.0.0';
+const port = parseInt(process.env.PORT, 10) || 4200;
 
 // Get the directory where this script is located
 const dir = path.resolve(__dirname);

@@ -1,6 +1,6 @@
-# Email-WhatsApp Bridge
+# inbox0
 
-A full-stack application that analyzes emails from Gmail and delivers notifications via WhatsApp using Twilio. Built with modern technologies and deployed on AWS.
+A full-stack email management application that fetches emails from Gmail, analyzes them using Claude AI (Anthropic), and delivers intelligent notifications via WhatsApp. Built with modern technologies and deployed on AWS.
 
 ## Table of Contents
 
@@ -10,22 +10,30 @@ A full-stack application that analyzes emails from Gmail and delivers notificati
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
-- **[Full setup guide (frontend, backend, Postgres, sign-in, admin)](SETUP.md)** — step-by-step for running and testing everything locally
 - [Development](#development)
+- [AI Features](#ai-features)
 - [Deployment](#deployment)
-- [Learning Resources](#learning-resources)
 - [API Documentation](#api-documentation)
+- [Troubleshooting](#troubleshooting)
+- [Learning Resources](#learning-resources)
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[SETUP.md](SETUP.md)** | Step-by-step guide for running and testing locally (sign-in, dashboard, admin) |
+| **[CLAUDE.md](CLAUDE.md)** | AI assistant context for working with this codebase |
+| **[AGENTS.md](AGENTS.md)** | Instructions for AI coding agents |
 
 ## Overview
 
-This application bridges your Gmail inbox with WhatsApp notifications:
+inbox0 helps you stay on top of your email with AI-powered analysis:
 
 1. **Email Sync**: Fetches emails from Gmail using OAuth2 authentication
-2. **Analysis**: Processes and categorizes emails
-3. **Notification**: Sends summaries via WhatsApp through Twilio
-4. **Management**: Web interface to configure preferences and view history
-
-Perfect for staying on top of important emails while on the go!
+2. **AI Analysis**: Summarizes and categorizes emails using Claude AI (Anthropic)
+3. **Notification**: Sends intelligent summaries via WhatsApp through Twilio
+4. **Management**: Web interface to view inbox, configure preferences, and manage integrations
+5. **Blog CMS**: AI-generated blog content from RSS trend analysis
 
 ## Architecture
 
@@ -35,18 +43,18 @@ Perfect for staying on top of important emails while on the go!
 └────────┬────────┘
          │ Gmail API
          ↓
-┌─────────────────┐      ┌──────────────┐
-│  Fastify API    │←────→│  PostgreSQL  │
-│  (Backend)      │      │  Database    │
-└────────┬────────┘      └──────────────┘
+┌─────────────────┐      ┌──────────────┐      ┌──────────────┐
+│  Fastify API    │←────→│  PostgreSQL  │      │  Claude AI   │
+│  (Backend)      │      │  Database    │←────→│  (Anthropic) │
+└────────┬────────┘      └──────────────┘      └──────────────┘
          │
          │ REST API
          ↓
 ┌─────────────────┐
 │   Next.js       │
 │   Frontend      │
-└─────────────────┘
-
+└────────┬────────┘
+         │
          ↓ Twilio API
 ┌─────────────────┐
 │    WhatsApp     │
@@ -56,81 +64,92 @@ Perfect for staying on top of important emails while on the go!
 
 ### Data Flow
 
-1. User authenticates with Gmail OAuth2
-2. Backend periodically fetches new emails
-3. Emails stored in PostgreSQL
-4. Backend sends WhatsApp notifications via Twilio
-5. User manages preferences through web interface
+1. User authenticates with Google OAuth2 via NextAuth.js
+2. Backend fetches emails from Gmail API
+3. Claude AI analyzes emails (summary, priority, category, sentiment)
+4. Emails and analysis stored in PostgreSQL
+5. Backend sends WhatsApp notifications via Twilio
+6. User manages preferences through the web dashboard
 
 ## Tech Stack
 
-### Frontend
-- **Next.js 14**: React framework with App Router
-- **TypeScript**: Type-safe development
-- **shadcn/ui**: Beautiful UI components built on Radix UI
-- **Tailwind CSS**: Utility-first styling
-- **Redux Toolkit**: State management
-- **RTK Query**: Data fetching and caching
+### Frontend (`apps/frontend/`)
+- **Next.js 16** with App Router
+- **React 19** with TypeScript
+- **Redux Toolkit + RTK Query** for state management and data fetching
+- **shadcn/ui** components (Radix UI based)
+- **Tailwind CSS** for styling
+- **NextAuth.js** for authentication (Google OAuth)
+- **PostHog** for analytics (optional)
 
-### Backend
-- **Fastify**: Fast Node.js web framework
-- **TypeScript**: Type-safe development
-- **PostgreSQL**: Relational database
-- **Gmail API**: Google APIs Node.js client
-- **Twilio**: WhatsApp messaging
+### Backend (`api/`)
+- **Fastify 5** web framework
+- **TypeScript** with esbuild bundling
+- **Prisma** ORM with PostgreSQL
+- **Anthropic SDK** (Claude AI) for email analysis
+- **googleapis** for Gmail API
+- **Twilio SDK** for WhatsApp messaging
+- **node-cron** for scheduled jobs
+
+### Shared Library (`libs/shared/`)
+- Common TypeScript types (re-exports from Prisma)
+- Utility functions (phone formatting, email validation, etc.)
+- Prisma schema definition
 
 ### Infrastructure
-- **Docker**: Containerization
-- **Docker Compose**: Local orchestration
-- **Terraform**: Infrastructure as Code for AWS
-- **LocalStack**: Local AWS cloud simulation
-- **AWS Services**: ECS, RDS, ALB, S3, SQS
-
-### Monorepo
-- **NX**: Build system and monorepo tools
-- **Shared Library**: Common types and utilities
+- **NX monorepo** with workspace-level dependencies
+- **Docker Compose** for local development and production
+- **Nginx** reverse proxy for production
+- **Terraform** for AWS deployment (ECS, RDS, ALB, etc.)
+- **PostgreSQL 16** database
 
 ## Project Structure
 
 ```
-email-whatsapp-bridge/
+inbox0/
 ├── apps/
-│   ├── frontend/              # Next.js application
+│   ├── frontend/              # Next.js 16 application
 │   │   ├── src/
-│   │   │   ├── app/           # Next.js App Router pages
+│   │   │   ├── app/           # App Router pages
+│   │   │   │   ├── dashboard/ # User dashboard
+│   │   │   │   ├── admin/     # Admin panel & blog CMS
+│   │   │   │   └── api/auth/  # NextAuth.js endpoints
 │   │   │   ├── components/    # React components
-│   │   │   ├── store/         # Redux store and RTK Query
-│   │   │   └── lib/           # Utilities
+│   │   │   │   ├── landing/   # Landing page components
+│   │   │   │   └── dashboard/ # Dashboard components
+│   │   │   ├── entities/      # RTK Query API slices
+│   │   │   ├── features/      # Feature components (inbox, whatsapp)
+│   │   │   └── shared/        # Shared utilities & UI
+│   │   ├── server.js          # Custom dev server
 │   │   └── Dockerfile
-│   └── frontend-e2e/          # E2E tests
+│   └── frontend-e2e/          # Playwright E2E tests
 │
-├── api/                       # Fastify backend
+├── api/                       # Fastify 5 backend
 │   ├── src/
-│   │   ├── app/              # Fastify app configuration
-│   │   ├── services/         # Gmail, Twilio services
-│   │   └── main.ts           # Entry point
+│   │   ├── app/
+│   │   │   ├── plugins/       # Fastify plugins (auth, sensible)
+│   │   │   └── routes/        # API endpoints
+│   │   ├── jobs/              # Cron job definitions
+│   │   └── services/          # Business logic
+│   │       ├── ai/            # Anthropic AI service
+│   │       ├── gmail.service.ts
+│   │       ├── twilio.service.ts
+│   │       └── trello.service.ts
 │   └── Dockerfile
 │
 ├── libs/
-│   └── shared/               # Shared TypeScript library
-│       └── src/
-│           ├── lib/
-│           │   ├── types.ts  # Common type definitions
-│           │   └── utils.ts  # Shared utilities
-│           └── index.ts
+│   └── shared/                # Shared TypeScript library
+│       ├── prisma/schema.prisma
+│       └── src/lib/
+│           ├── types.ts       # Shared type definitions
+│           └── utils.ts       # Utility functions
 │
-├── terraform/                # AWS infrastructure
-│   ├── modules/              # Terraform modules
-│   ├── main.tf               # Main configuration
-│   ├── variables.tf          # Input variables
-│   └── outputs.tf            # Output values
-│
-├── scripts/                  # Helper scripts
-│   └── init-db.sql          # Database schema
-│
-├── docker-compose.yml        # Local development stack
-├── .env.example              # Environment variables template
-└── README.md                 # This file
+├── terraform/                 # AWS infrastructure as code
+├── nginx/                     # Nginx reverse proxy config
+├── scripts/                   # Helper scripts
+├── docker-compose.yml         # Production Docker stack
+├── docker-compose.dev.yml     # Development Docker stack
+└── README.md
 ```
 
 ## Prerequisites
@@ -147,437 +166,398 @@ email-whatsapp-bridge/
 1. **Google Cloud Account**: [Sign up](https://console.cloud.google.com/)
 2. **Gmail API enabled**: Enable in Google Cloud Console
 3. **OAuth 2.0 Credentials**: Create in Google Cloud Console
+   - Add redirect URI: `http://localhost:4200/api/auth/callback/google`
 
-### For WhatsApp Integration
+### For AI Features
+
+- **Anthropic API Key**: [Sign up](https://www.anthropic.com/) for Claude AI access
+
+### For WhatsApp Integration (Optional)
 
 1. **Twilio Account**: [Sign up](https://www.twilio.com/try-twilio)
 2. **WhatsApp Sandbox**: Enable in Twilio Console
 3. **Twilio Phone Number**: WhatsApp-enabled number
 
-### For AWS Deployment (Optional)
-
-1. **AWS Account**: [Sign up](https://aws.amazon.com/)
-2. **AWS CLI**: [Install](https://aws.amazon.com/cli/)
-3. **Terraform**: [Install](https://www.terraform.io/downloads)
-
 ## Getting Started
 
-### 1. Clone the Repository
+### Quick Start (Recommended)
+
+For a complete step-by-step guide including Google OAuth setup, see **[SETUP.md](SETUP.md)**.
+
+### 1. Clone and Install
 
 ```bash
-cd email-whatsapp-bridge
-```
-
-### 2. Install Dependencies
-
-```bash
+git clone <repo-url>
+cd inbox0
 npm install
 ```
 
-### 3. Configure Environment Variables
-
-Copy the example environment file:
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and fill in your credentials:
+Edit `.env` with your credentials:
 
 ```env
-# Gmail API (from Google Cloud Console)
+# Required for authentication
+NEXTAUTH_URL=http://localhost:4200
+NEXTAUTH_SECRET=<run: openssl rand -base64 32>
+
+# Google OAuth (from Google Cloud Console)
 GMAIL_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GMAIL_CLIENT_SECRET=your-client-secret
-
-# Twilio (from Twilio Console)
-TWILIO_ACCOUNT_SID=your-account-sid
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886
 
 # Database
 DATABASE_URL=postgresql://devuser:devpassword@localhost:5432/email_whatsapp_bridge
 
-# JWT Secret (generate with: openssl rand -base64 32)
-JWT_SECRET=your-secret-key
+# AI Features (optional but recommended)
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# API URL
+NEXT_PUBLIC_API_URL=http://localhost:3000/api
 ```
 
-### 4. Start Services with Docker Compose
+### 3. Start Development Environment
+
+**Option A: Docker Compose (Recommended for first-time setup)**
 
 ```bash
-docker-compose up
+# Start everything with hot reloading
+docker-compose -f docker-compose.dev.yml up
 ```
 
 This starts:
 - PostgreSQL database (port 5432)
-- LocalStack for AWS simulation (port 4566)
-- Backend API (port 3000)
-- Frontend (port 4200)
+- Backend API with hot reload (port 3000)
+- Frontend with hot reload (port 4200)
 
-### 5. Access the Application
+**Option B: Manual (More control)**
 
-- **Frontend**: http://localhost:4200
-- **API**: http://localhost:3000
-- **LocalStack**: http://localhost:4566
+```bash
+# Terminal 1: Start database
+docker-compose up -d postgres
+
+# Wait for database, then run migrations
+npx prisma generate --schema=libs/shared/prisma/schema.prisma
+npx prisma db push --schema=libs/shared/prisma/schema.prisma
+
+# Terminal 2: Start backend
+npx nx serve api
+
+# Terminal 3: Start frontend
+npx nx dev frontend
+```
+
+### 4. Access the Application
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Frontend | http://localhost:4200 | Web application |
+| API | http://localhost:3000/api | REST API |
+| API Health | http://localhost:3000/api/health | Health check |
 
 ## Development
 
-### Running Individual Services
+### Docker Compose Development Environment
 
-Instead of Docker Compose, you can run services individually:
+The `docker-compose.dev.yml` provides a complete development environment with hot reloading:
+
+```bash
+# Start all services
+docker-compose -f docker-compose.dev.yml up
+
+# Start in background
+docker-compose -f docker-compose.dev.yml up -d
+
+# Rebuild after dependency changes
+docker-compose -f docker-compose.dev.yml up --build
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f api
+docker-compose -f docker-compose.dev.yml logs -f frontend
+
+# Stop all services
+docker-compose -f docker-compose.dev.yml down
+
+# Reset database (destructive)
+docker-compose -f docker-compose.dev.yml down -v
+```
+
+### Manual Development (Alternative)
 
 ```bash
 # Start database only
-docker-compose up postgres
+docker-compose up -d postgres
 
-# Run backend in dev mode
+# Run backend in dev mode (terminal 1)
 npx nx serve api
 
-# Run frontend in dev mode
-npx nx serve frontend
+# Run frontend in dev mode (terminal 2)
+npx nx dev frontend
 ```
 
-### Building the Project
+### Building
 
 ```bash
 # Build all apps
-npm run build
-
-# Build specific app
 npx nx build api
 npx nx build frontend
 
-# Build shared library
-npx nx build shared
+# Build for production
+npx nx build api --configuration=production
+npx nx build frontend --configuration=production
 ```
 
 ### Testing
 
 ```bash
 # Run all tests
-npm run test
-
-# Run specific tests
 npx nx test api
 npx nx test frontend
-npx nx test shared
+
+# Run E2E tests
+npx nx e2e frontend-e2e
+
+# Run tests with coverage
+npx nx test api --coverage
 ```
 
-### Code Quality
+### Linting
 
 ```bash
-# Lint all code
-npm run lint
+# Lint all projects
+npx nx lint api
+npx nx lint frontend
 
 # Format code
 npm run format
-
-# Type check
-npm run type-check
 ```
 
-## Understanding the Codebase
-
-### NX Monorepo
-
-This project uses NX, a powerful build system for monorepos:
-
-- **Apps**: Frontend and backend applications live in `apps/`
-- **Libs**: Shared code lives in `libs/`
-- **Task Caching**: NX caches build outputs for speed
-- **Dependency Graph**: `npx nx graph` shows relationships
-
-Learn more: [NX Documentation](https://nx.dev)
-
-### Shared Library
-
-The `libs/shared` library contains:
-
-- **Types**: TypeScript interfaces used by both frontend and backend
-- **Utilities**: Common functions (phone formatting, email validation, etc.)
-
-Both apps import from `@email-whatsapp-bridge/shared`:
-
-```typescript
-import { Email, formatPhoneNumber } from '@email-whatsapp-bridge/shared';
-```
-
-### Redux & RTK Query
-
-Frontend uses Redux Toolkit for state management:
-
-- **Store**: `apps/frontend/src/store/index.ts`
-- **API Slice**: `apps/frontend/src/store/api.ts` defines all endpoints
-- **Hooks**: Auto-generated hooks like `useGetEmailsQuery()`
-
-RTK Query automatically handles:
-- Loading states
-- Error handling
-- Data caching
-- Automatic refetching
-
-Learn more: [RTK Query Docs](https://redux-toolkit.js.org/rtk-query/overview)
-
-### shadcn/ui
-
-UI components from shadcn/ui:
-
-- **Customizable**: Components are copied to your project
-- **Accessible**: Built on Radix UI primitives
-- **Themeable**: Uses CSS variables for theming
-
-Add new components:
+### Database Management
 
 ```bash
-npx shadcn-ui@latest add button
+# Generate Prisma client
+npx prisma generate --schema=libs/shared/prisma/schema.prisma
+
+# Push schema changes (development)
+npx prisma db push --schema=libs/shared/prisma/schema.prisma
+
+# Create migration
+npx prisma migrate dev --schema=libs/shared/prisma/schema.prisma --name <migration-name>
+
+# Apply migrations (production)
+npx prisma migrate deploy --schema=libs/shared/prisma/schema.prisma
+
+# Open Prisma Studio (database browser)
+npx prisma studio --schema=libs/shared/prisma/schema.prisma
+
+# Reset database (destructive)
+npx prisma migrate reset --schema=libs/shared/prisma/schema.prisma
 ```
 
-Learn more: [shadcn/ui Docs](https://ui.shadcn.com)
+### NX Workspace
 
-### Gmail API Integration
+```bash
+# Visualize project dependencies
+npx nx graph
 
-The Gmail service (`api/src/services/gmail.service.ts`):
+# Run affected tests (based on git changes)
+npx nx affected:test
 
-1. **OAuth Flow**: User authenticates via Google
-2. **Token Storage**: Access and refresh tokens stored in database
-3. **Email Fetching**: Periodically polls for new emails
-4. **Parsing**: Converts Gmail format to our Email type
+# Clear NX cache
+npx nx reset
+```
 
-Key concepts:
-- **OAuth 2.0**: User grants permission to access Gmail
-- **Refresh Tokens**: Long-lived tokens to renew access
-- **Scopes**: Specific permissions (read emails, labels)
+## AI Features
 
-Learn more: [Gmail API Docs](https://developers.google.com/gmail/api)
+inbox0 uses Claude AI (Anthropic) for intelligent email processing:
 
-### Twilio WhatsApp Integration
+### Email Analysis
+- **Summary**: Concise overview of email content
+- **Priority**: High/Medium/Low classification
+- **Category**: Auto-categorization (work, personal, newsletter, etc.)
+- **Action Items**: Extracted tasks and to-dos
+- **Sentiment**: Positive/Neutral/Negative analysis
 
-The Twilio service (`api/src/services/twilio.service.ts`):
+### Inbox Digest
+- Daily/weekly summaries of your inbox
+- Highlights important emails
+- Groups emails by category
 
-1. **Opt-in**: Users must send a message to your Twilio number first
-2. **24-Hour Window**: Can message users for 24 hours after opt-in
-3. **Message Formatting**: Converts emails to WhatsApp format
-4. **Status Tracking**: Monitors delivery status
+### Blog Generation
+- AI-generated blog posts from RSS trend analysis
+- Content suggestions based on trending topics
+- SEO optimization
 
-Key concepts:
-- **E.164 Format**: Phone numbers as +[country][number]
-- **whatsapp: Prefix**: Twilio requires this prefix
-- **Message Templates**: Pre-approved messages for 24hr+ window
-
-Learn more: [Twilio WhatsApp Docs](https://www.twilio.com/docs/whatsapp)
+The AI service is implemented in `api/src/services/ai/anthropic.service.ts`.
 
 ## Deployment
 
-### Prerequisites
-
-1. Build and push Docker images to Amazon ECR:
+### Production Docker Compose
 
 ```bash
-# Login to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
+# Build and start production stack
+docker-compose up --build -d
 
-# Build images
-docker build -t email-whatsapp-api -f api/Dockerfile .
-docker build -t email-whatsapp-frontend -f apps/frontend/Dockerfile .
-
-# Tag images
-docker tag email-whatsapp-api:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/email-whatsapp-api:latest
-docker tag email-whatsapp-frontend:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/email-whatsapp-frontend:latest
-
-# Push images
-docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/email-whatsapp-api:latest
-docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/email-whatsapp-frontend:latest
+# View logs
+docker-compose logs -f
 ```
 
-### Deploy with Terraform
+Production stack includes:
+- PostgreSQL (internal)
+- Backend API
+- Frontend
+- Nginx reverse proxy (port 80)
+
+Access via: http://localhost
+
+### Deploy to AWS with Terraform
+
+See [terraform/README.md](terraform/README.md) for detailed AWS deployment instructions.
 
 ```bash
 cd terraform
 
 # Configure variables
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your values
 
-# Initialize Terraform
+# Initialize and deploy
 terraform init
-
-# Plan deployment
 terraform plan
-
-# Deploy infrastructure
 terraform apply
-
-# Get outputs (ALB URL, database endpoint, etc.)
-terraform output
 ```
 
-See [terraform/README.md](terraform/README.md) for detailed instructions.
+### Deploy Frontend to Vercel
 
-## Learning Resources
+1. Set **Root Directory** to `apps/frontend` in Vercel settings
+2. Enable **"Include source files outside of the Root Directory"**
+3. Set environment variables: `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `DATABASE_URL`, etc.
 
-### NX Monorepo
-- [NX Documentation](https://nx.dev)
-- [NX Tutorial](https://nx.dev/getting-started/intro)
-
-### Next.js
-- [Next.js Docs](https://nextjs.org/docs)
-- [App Router Guide](https://nextjs.org/docs/app)
-
-### Fastify
-- [Fastify Docs](https://www.fastify.io/docs/latest/)
-- [Fastify Guides](https://www.fastify.io/docs/latest/Guides/)
-
-### Redux Toolkit
-- [Redux Toolkit Docs](https://redux-toolkit.js.org/)
-- [RTK Query Tutorial](https://redux-toolkit.js.org/tutorials/rtk-query)
-
-### shadcn/ui
-- [shadcn/ui Docs](https://ui.shadcn.com)
-- [Radix UI](https://www.radix-ui.com/)
-
-### Tailwind CSS
-- [Tailwind Docs](https://tailwindcss.com/docs)
-- [Tailwind UI Components](https://tailwindui.com/)
-
-### PostgreSQL
-- [PostgreSQL Tutorial](https://www.postgresqltutorial.com/)
-- [PostgreSQL Docs](https://www.postgresql.org/docs/)
-
-### Docker
-- [Docker Get Started](https://docs.docker.com/get-started/)
-- [Docker Compose](https://docs.docker.com/compose/)
-
-### Terraform
-- [Terraform Docs](https://www.terraform.io/docs)
-- [AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-
-### Gmail API
-- [Gmail API Guide](https://developers.google.com/gmail/api/guides)
-- [OAuth 2.0](https://developers.google.com/identity/protocols/oauth2)
-
-### Twilio WhatsApp
-- [Twilio WhatsApp Docs](https://www.twilio.com/docs/whatsapp)
-- [WhatsApp Templates](https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates)
+See [SETUP.md](SETUP.md#11-deploy-frontend-to-vercel) for detailed Vercel instructions.
 
 ## API Documentation
 
-### Authentication Endpoints
+### Authentication
 
-#### `GET /auth/google`
-Initiates Gmail OAuth flow. Redirects user to Google consent screen.
-
-#### `GET /auth/google/callback`
-OAuth callback. Exchanges code for tokens and creates user session.
+The frontend uses NextAuth.js with Google OAuth. The backend validates sessions via the database.
 
 ### Email Endpoints
 
-#### `GET /api/emails`
-Get list of emails with optional filters.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/emails` | List emails with filters |
+| GET | `/api/emails/:id` | Get single email |
+| POST | `/api/emails/sync` | Trigger Gmail sync |
+| GET | `/api/emails/digest` | Get AI-generated digest |
 
-**Query Parameters:**
+**Query Parameters for `/api/emails`:**
 - `isUnread` (boolean): Filter unread emails
 - `from` (string): Filter by sender
 - `label` (string): Filter by Gmail label
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "msg123",
-      "subject": "Hello World",
-      "from": "sender@example.com",
-      "date": "2024-01-15T10:30:00Z",
-      "snippet": "Email preview...",
-      "isRead": false
-    }
-  ]
-}
-```
-
-#### `GET /api/emails/:id`
-Get single email by ID.
-
-#### `POST /api/emails/sync`
-Manually trigger Gmail sync.
-
-### WhatsApp Endpoints
-
-#### `POST /api/whatsapp/send`
-Send WhatsApp message.
-
-**Body:**
-```json
-{
-  "to": "+1234567890",
-  "message": "Hello from the app!",
-  "emailId": "optional-email-id"
-}
-```
-
-#### `GET /api/whatsapp/messages`
-Get WhatsApp message history.
-
 ### User Endpoints
 
-#### `GET /api/user/me`
-Get current user information.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/user/me` | Get current user |
+| PATCH | `/api/user/preferences` | Update preferences |
 
-#### `PATCH /api/user/preferences`
-Update user notification preferences.
+### Trello Integration
 
-**Body:**
-```json
-{
-  "notifyOnNewEmail": true,
-  "digestMode": false,
-  "quietHoursStart": "22:00",
-  "quietHoursEnd": "08:00"
-}
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/trello/boards` | List boards |
+| POST | `/api/trello/cards` | Create card from email |
+
+### Health Check
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | API health status |
 
 ## Troubleshooting
 
-### Gmail API Issues
+### Common Issues
 
-**Issue**: "Invalid OAuth credentials"
-- Verify `GMAIL_CLIENT_ID` and `GMAIL_CLIENT_SECRET` in `.env`
-- Check redirect URI matches Google Cloud Console
+**"redirect_uri_mismatch" (Google OAuth)**
+- Add exact redirect URI in Google Cloud: `http://localhost:4200/api/auth/callback/google`
+- Ensure `NEXTAUTH_URL` matches how you access the app
+- Restart frontend after changing `.env`
 
-**Issue**: "Insufficient permissions"
-- User needs to re-authenticate with correct scopes
-- Delete and recreate OAuth credentials
-
-### Twilio WhatsApp Issues
-
-**Issue**: "Not opted in"
-- User must send a message to Twilio number first
-- Check Twilio sandbox configuration
-
-**Issue**: "Message failed to send"
-- Verify Twilio credentials
-- Check account balance
-- Ensure phone number format is correct
-
-### Database Issues
-
-**Issue**: "Connection refused"
-- Ensure PostgreSQL container is running: `docker-compose ps`
+**"Can't reach database server at localhost:5432"**
+- Start PostgreSQL: `docker-compose up -d postgres`
 - Check `DATABASE_URL` in `.env`
-- Verify port 5432 is not in use
+- If using Docker Compose dev, ensure you wait for postgres to be healthy
 
-### Docker Issues
+**"Module not found" errors**
+```bash
+# Clear NX cache and reinstall
+npx nx reset
+rm -rf node_modules package-lock.json
+npm install
+```
 
-**Issue**: "Port already in use"
-- Change ports in `docker-compose.yml`
-- Stop conflicting services
+**Docker issues**
+```bash
+# Rebuild containers
+docker-compose -f docker-compose.dev.yml up --build
 
-**Issue**: "Out of disk space"
-- Clean up Docker: `docker system prune -a`
+# Reset volumes (destructive)
+docker-compose -f docker-compose.dev.yml down -v
+```
+
+**Port conflicts**
+- Frontend: 4200
+- API: 3000
+- PostgreSQL: 5432
+- Nginx (production): 80
+
+Check for conflicting processes and stop them or change ports in docker-compose files.
+
+### Getting Help
+
+See [SETUP.md](SETUP.md#9-troubleshooting) for more detailed troubleshooting steps.
+
+## Learning Resources
+
+### Core Technologies
+
+| Technology | Documentation |
+|------------|---------------|
+| NX Monorepo | [nx.dev](https://nx.dev) |
+| Next.js 16 | [nextjs.org/docs](https://nextjs.org/docs) |
+| Fastify 5 | [fastify.dev](https://fastify.dev) |
+| Redux Toolkit | [redux-toolkit.js.org](https://redux-toolkit.js.org) |
+| Prisma | [prisma.io/docs](https://prisma.io/docs) |
+| shadcn/ui | [ui.shadcn.com](https://ui.shadcn.com) |
+| Tailwind CSS | [tailwindcss.com](https://tailwindcss.com) |
+
+### APIs & Services
+
+| Service | Documentation |
+|---------|---------------|
+| Anthropic Claude | [docs.anthropic.com](https://docs.anthropic.com) |
+| Gmail API | [developers.google.com/gmail/api](https://developers.google.com/gmail/api) |
+| Twilio WhatsApp | [twilio.com/docs/whatsapp](https://www.twilio.com/docs/whatsapp) |
+| NextAuth.js | [next-auth.js.org](https://next-auth.js.org) |
+
+### Infrastructure
+
+| Tool | Documentation |
+|------|---------------|
+| Docker | [docs.docker.com](https://docs.docker.com) |
+| Terraform | [terraform.io/docs](https://www.terraform.io/docs) |
+| PostgreSQL | [postgresql.org/docs](https://www.postgresql.org/docs/) |
 
 ## Contributing
 
-This is a learning project! Suggestions and improvements welcome.
+Contributions are welcome! Please follow:
+
+1. Use Conventional Commits format (feat, fix, docs, etc.)
+2. Run tests before submitting: `npx nx test api && npx nx test frontend`
+3. Ensure linting passes: `npx nx lint api && npx nx lint frontend`
 
 ## License
 
@@ -585,4 +565,4 @@ MIT License - feel free to use this for learning and projects.
 
 ---
 
-Built with ❤️ as a learning exercise in modern full-stack development.
+Built with modern technologies for intelligent email management.

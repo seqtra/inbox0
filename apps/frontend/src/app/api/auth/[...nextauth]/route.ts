@@ -14,7 +14,17 @@ if (process.env.VERCEL_URL) {
   }
 }
 
-const prisma = new PrismaClient();
+// In Docker, DIRECT_URL is set to the internal Docker network URL (postgres:5432)
+// Use it as the primary URL for database connections in containerized environments
+const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: databaseUrl,
+    },
+  },
+});
 
 export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
   adapter: PrismaAdapter(prisma),
@@ -47,6 +57,17 @@ export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
       // The PrismaAdapter handles the account creation/linking automatically
       // if 'allowDangerousEmailAccountLinking' is true or if the user is already logged in.
       return true;
+    },
+    async redirect({ url, baseUrl }) {
+      // After sign in, redirect to dashboard
+      if (url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/dashboard`;
+      }
+      // Allow relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allow callback URLs on the same origin
+      if (new URL(url).origin === baseUrl) return url;
+      return `${baseUrl}/dashboard`;
     }
   },
   session: {

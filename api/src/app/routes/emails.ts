@@ -113,4 +113,37 @@ export default async function (fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Failed to analyze email' });
     }
   });
+
+  /**
+   * POST /api/emails/summarize
+   * Fetches the last 20 emails and generates an AI-powered inbox digest.
+   * Returns: InboxSummary
+   */
+  fastify.post('/summarize', async (request, reply) => {
+    const userId = request.user?.id;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const tokens = await getGoogleTokens(userId);
+    if (!tokens) {
+      return reply.status(400).send({
+        error: 'Google account not linked.',
+        message: 'Sign in with Google to summarize your emails.',
+      });
+    }
+
+    try {
+      const gmailService = new GmailService(
+        tokens.access_token,
+        tokens.refresh_token ?? undefined
+      );
+      const emails = await gmailService.fetchEmails(undefined, 20);
+      const summary = await getAIService().summarizeInbox(emails);
+      return { success: true, data: summary };
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: 'Failed to summarize inbox' });
+    }
+  });
 }

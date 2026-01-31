@@ -1,13 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
-
-// Create a minimal reducer to avoid the warning
-// Using combineReducers pattern that Redux Toolkit expects
-const rootReducer = (state: Record<string, never> = {}, _action: any) => state;
+import { api } from '@/shared/api/api';
 
 export const store = configureStore({
   reducer: {
-    app: rootReducer,
+    [api.reducerPath]: api.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(api.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -11,9 +11,8 @@
 ##
 
 FROM node:20-alpine AS deps
+# Install dependencies needed for native modules
 RUN apk add --no-cache openssl libc6-compat
-# Install dependencies only when needed
-RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
@@ -21,6 +20,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY apps/frontend/package*.json ./apps/frontend/
 COPY libs/shared/package*.json ./libs/shared/
+
+# Copy Prisma schema (needed for postinstall script)
+COPY libs/shared/prisma ./libs/shared/prisma
 
 # Install dependencies
 RUN npm install
