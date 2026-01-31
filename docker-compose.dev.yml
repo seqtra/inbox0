@@ -1,0 +1,136 @@
+##
+# Docker Compose Configuration for LOCAL DEVELOPMENT
+#
+# This file provides a development environment with:
+# - Hot reloading for API and frontend
+# - Source code mounted as volumes
+# - Development mode Node.js servers
+#
+# Usage:
+#   Start all services: docker-compose -f docker-compose.dev.yml up
+#   Start in background: docker-compose -f docker-compose.dev.yml up -d
+#   Rebuild after dependency changes: docker-compose -f docker-compose.dev.yml up --build
+#   Stop all services: docker-compose -f docker-compose.dev.yml down
+#   View logs: docker-compose -f docker-compose.dev.yml logs -f [service-name]
+##
+
+version: '3.9'
+
+services:
+  ##
+  # PostgreSQL Database
+  ##
+  postgres:
+    image: postgres:16-alpine
+    container_name: email-whatsapp-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: email_whatsapp_bridge
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_INITDB_ARGS: '-E UTF8 --locale=en_US.UTF-8'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U devuser -d email_whatsapp_bridge']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ##
+  # Backend API - Development Server with Hot Reload
+  ##
+  api:
+    image: node:20-alpine
+    container_name: email-whatsapp-api-dev
+    working_dir: /app
+    env_file: .env
+    # Explicitly export DATABASE_URL to ensure it overrides .env file
+    command: >
+      sh -c "
+        export DATABASE_URL='postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge' &&
+        apk add --no-cache openssl curl &&
+        npm install &&
+        npx prisma generate --schema=./libs/shared/prisma/schema.prisma &&
+        npx prisma db push --schema=./libs/shared/prisma/schema.prisma --skip-generate &&
+        npx nx serve api
+      "
+    environment:
+      # Override DATABASE_URL to use docker service name instead of localhost
+      # Note: This MUST override any DATABASE_URL in .env for container networking
+      DATABASE_URL: postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge
+      DIRECT_URL: postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge
+      HOST: 0.0.0.0
+      API_PORT: 3000
+      CHOKIDAR_USEPOLLING: 'true'
+    ports:
+      - '3000:3000'
+    volumes:
+      # Mount entire project for NX workspace resolution
+      - .:/app
+      # Use named volume for node_modules to improve performance
+      - node_modules_dev:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  ##
+  # Frontend - Next.js Development Server with Hot Reload
+  ##
+  frontend:
+    image: node:20-alpine
+    container_name: email-whatsapp-frontend-dev
+    working_dir: /app
+    env_file: .env
+    # Skip npm install - node_modules is shared with api service which installs first
+    command: sh -c "apk add --no-cache openssl && npx nx dev frontend -- -H 0.0.0.0"
+    environment:
+      # Override DATABASE_URL to use docker service name instead of localhost
+      # Note: This MUST override any DATABASE_URL in .env for container networking
+      DATABASE_URL: postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge
+      DIRECT_URL: postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge
+      # API URL for client-side requests (browser connects via host port mapping)
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_TELEMETRY_DISABLED: 1
+      WATCHPACK_POLLING: 'true'
+      CHOKIDAR_USEPOLLING: 'true'
+    ports:
+      - '4200:4200'
+    volumes:
+      # Mount entire project for NX workspace resolution
+      - .:/app
+      # Share node_modules with api service
+      - node_modules_dev:/app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+##
+# Named volumes
+##
+volumes:
+  postgres_data_dev:
+    driver: local
+  node_modules_dev:
+    driver: local
+
+##
+# Network configuration
+##
+networks:
+  default:
+    name: email-whatsapp-network-dev
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16

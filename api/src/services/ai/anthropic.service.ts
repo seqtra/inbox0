@@ -4,7 +4,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
-import type { Email, EmailSummary } from '@email-whatsapp-bridge/shared';
+import type { Email, EmailSummary, InboxSummary, EmailCategory } from '@email-whatsapp-bridge/shared';
 import type { AIService, ChatCompletionOptions, ChatCompletionResult } from './types';
 
 const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
@@ -28,6 +28,14 @@ const EmailSummarySchema = z.object({
   ]),
   actionItems: z.array(z.string()),
   sentiment: z.enum(['positive', 'neutral', 'negative']),
+});
+
+const InboxSummarySchema = z.object({
+  summary: z.string(),
+  highlights: z.array(z.string()),
+  urgentItems: z.array(z.string()),
+  categoryCounts: z.record(z.string(), z.number()),
+  topSenders: z.array(z.string()),
 });
 
 export class AnthropicAIService implements AIService {
@@ -86,12 +94,11 @@ export class AnthropicAIService implements AIService {
   }
 
   async analyzeEmail(email: Email): Promise<EmailSummary> {
-    try {
-      if (!getApiKey()) {
-        throw new Error('Anthropic API key is missing');
-      }
+    if (!getApiKey()) {
+      throw new Error('Anthropic API key is missing');
+    }
 
-      const emailContext = `
+    const emailContext = `
 From: ${email.from}
 Subject: ${email.subject}
 Date: ${email.date}
@@ -99,9 +106,9 @@ Content: ${email.snippet}
 
 ${email.body.substring(0, 3000)}
 (Content truncated to first 3000 chars.)
-      `.trim();
+    `.trim();
 
-      const systemPrompt = `You are an intelligent personal executive assistant. Analyze the following email and extract structured data.
+    const systemPrompt = `You are an intelligent personal executive assistant. Analyze the following email and extract structured data.
 
 Respond with a single JSON object only (no markdown, no code fence), with these exact keys:
 - "summary": string, concise 1-2 sentence summary
@@ -110,35 +117,96 @@ Respond with a single JSON object only (no markdown, no code fence), with these 
 - "actionItems": array of strings (specific tasks or actions)
 - "sentiment": one of "positive" | "neutral" | "negative"`;
 
-      const result = await this.chatCompletion({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: emailContext },
-        ],
-        response_format: { type: 'json_object' },
-      });
+    const result = await this.chatCompletion({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: emailContext },
+      ],
+      response_format: { type: 'json_object' },
+    });
 
-      const raw = result.choices[0]?.message?.content;
-      if (!raw) {
-        throw new Error('Empty AI response');
-      }
+    const raw = result.choices[0]?.message?.content;
+    if (!raw) {
+      throw new Error('Empty AI response');
+    }
 
-      const parsed = JSON.parse(raw);
-      const validated = EmailSummarySchema.parse(parsed);
+    const parsed = JSON.parse(raw);
+    const validated = EmailSummarySchema.parse(parsed);
+    return {
+      emailId: email.id,
+      ...validated,
+    };
+  }
+
+  async summarizeInbox(emails: Email[]): Promise<InboxSummary> {
+    const defaultCategories: Record<EmailCategory, number> = {
+      work: 0,
+      personal: 0,
+      newsletter: 0,
+      promotional: 0,
+      social: 0,
+      finance: 0,
+      travel: 0,
+      other: 0,
+    };
+
+    if (!getApiKey()) {
+      throw new Error('Anthropic API key is missing');
+    }
+
+    if (emails.length === 0) {
       return {
-        emailId: email.id,
-        ...validated,
-      };
-    } catch (error) {
-      console.error('Error analyzing email with Anthropic:', error);
-      return {
-        emailId: email.id,
-        summary: 'Could not generate summary due to an error.',
-        priority: 'medium',
-        category: 'other',
-        actionItems: [],
-        sentiment: 'neutral',
+        totalEmails: 0,
+        summary: 'No emails to summarize.',
+        highlights: [],
+        urgentItems: [],
+        categoryCounts: defaultCategories,
+        topSenders: [],
+        generatedAt: new Date().toISOString(),
       };
     }
+
+    // Build a condensed view of all emails for the AI
+    const emailsContext = emails
+      .map(
+        (email, idx) =>
+          `[${idx + 1}] From: ${email.from} | Subject: ${email.subject} | Date: ${email.date}\nSnippet: ${email.snippet.substring(0, 200)}`
+      )
+      .join('\n\n');
+
+    const systemPrompt = `You are an intelligent executive assistant. Analyze the following list of emails and provide a comprehensive inbox digest.
+
+Respond with a single JSON object only (no markdown, no code fence), with these exact keys:
+- "summary": string, a 2-3 sentence overview of the inbox state and key themes
+- "highlights": array of strings, 3-5 most important items or themes from these emails
+- "urgentItems": array of strings, any time-sensitive or urgent matters that need immediate attention
+- "categoryCounts": object with counts for each category (work, personal, newsletter, promotional, social, finance, travel, other)
+- "topSenders": array of strings, the top 3-5 most frequent or important senders`;
+
+    const result = await this.chatCompletion({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Here are ${emails.length} recent emails:\n\n${emailsContext}` },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const raw = result.choices[0]?.message?.content;
+    if (!raw) {
+      throw new Error('Empty AI response');
+    }
+
+    const parsed = JSON.parse(raw);
+    const validated = InboxSummarySchema.parse(parsed);
+
+    return {
+      totalEmails: emails.length,
+      summary: validated.summary,
+      highlights: validated.highlights,
+      urgentItems: validated.urgentItems,
+      categoryCounts: { ...defaultCategories, ...validated.categoryCounts } as Record<EmailCategory, number>,
+      topSenders: validated.topSenders,
+      generatedAt: new Date().toISOString(),
+    };
   }
 }

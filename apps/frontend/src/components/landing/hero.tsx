@@ -2,6 +2,7 @@
 
 import React, { useId } from 'react';
 import { motion } from 'framer-motion';
+import posthog from 'posthog-js';
 
 import { cn } from '@/shared/lib/utils';
 
@@ -103,6 +104,7 @@ export function Hero({
                 data-tally-open={tallyFormId}
                 data-tally-emoji-text="👋"
                 data-tally-emoji-animation="wave"
+                onClick={() => posthog.capture('cta_get_early_access_click', { location: 'hero' })}
               >
                 {ctaLabel}
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>

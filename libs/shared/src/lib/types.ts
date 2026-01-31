@@ -131,6 +131,19 @@ export interface EmailSummary {
 }
 
 /**
+ * AI-generated summary of multiple emails (inbox digest)
+ */
+export interface InboxSummary {
+  totalEmails: number;
+  summary: string;
+  highlights: string[];
+  urgentItems: string[];
+  categoryCounts: Record<EmailCategory, number>;
+  topSenders: string[];
+  generatedAt: string;
+}
+
+/**
  * Email categories for classification
  */
 export type EmailCategory =

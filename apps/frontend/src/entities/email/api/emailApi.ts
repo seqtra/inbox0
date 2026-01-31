@@ -3,6 +3,7 @@ import type {
   Email,
   EmailFilters,
   EmailSummary,
+  InboxSummary,
   ApiResponse,
 } from '@email-whatsapp-bridge/shared';
 
@@ -48,6 +49,16 @@ const emailApi = api.injectEndpoints({
         body: email,
       }),
     }),
+
+    /**
+     * Summarize inbox (last 20 emails) with AI
+     */
+    summarizeInbox: builder.mutation<ApiResponse<InboxSummary>, void>({
+      query: () => ({
+        url: '/emails/summarize',
+        method: 'POST',
+      }),
+    }),
   }),
 });
 
@@ -56,4 +67,5 @@ export const {
   useGetEmailByIdQuery,
   useSyncEmailsMutation,
   useAnalyzeEmailMutation,
+  useSummarizeInboxMutation,
 } = emailApi;

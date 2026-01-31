@@ -22,6 +22,9 @@ COPY package*.json ./
 COPY api/package*.json ./api/
 COPY libs/shared/package*.json ./libs/shared/
 
+# Copy Prisma schema (needed for postinstall script)
+COPY libs/shared/prisma ./libs/shared/prisma
+
 # Install all dependencies (including dev dependencies for build)
 RUN npm install
 ##

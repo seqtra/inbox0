@@ -1,15 +1,18 @@
 ##
-# Docker Compose Configuration for Email-WhatsApp Bridge
+# Docker Compose Configuration for PRODUCTION
 #
-# This file orchestrates all services needed for local development:
+# This file orchestrates all services for production deployment:
 # 1. PostgreSQL - Database for storing emails, users, and messages
-# 2. Backend API - Fastify server handling Gmail and Twilio integrations
-# 3. Frontend - Next.js web application
+# 2. Backend API - Fastify server (production build)
+# 3. Frontend - Next.js web application (production build)
 # 4. Nginx - Reverse proxy (single entrypoint on port 80)
 #
-# Usage:
-#   Start all services: docker-compose up
-#   Start in background: docker-compose up -d
+# For LOCAL DEVELOPMENT with hot reloading, use:
+#   docker-compose -f docker-compose.dev.yml up
+#
+# Production usage:
+#   Start all services: docker-compose up --build
+#   Start in background: docker-compose up -d --build
 #   Stop all services: docker-compose down
 #   View logs: docker-compose logs -f [service-name]
 ##
@@ -86,11 +89,8 @@ services:
 
       # Application settings
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+
       API_PORT: 3000
-    volumes:
-      # Mount source code for hot reloading in development
-      - ./api/src:/app/api/src
-      - ./libs/shared/src:/app/libs/shared/src
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,10 +115,8 @@ services:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
       NEXT_TELEMETRY_DISABLED: 1
-    volumes:
-      # Mount source code for hot reloading
-      - ./apps/frontend/src:/app/apps/frontend/src
-      - ./libs/shared/src:/app/libs/shared/src
+      NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY}
+      NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST}
     depends_on:
       - api
 
