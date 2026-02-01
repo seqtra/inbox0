@@ -29,6 +29,8 @@ export interface NavigationProps {
   loginLabel?: string;
   /** CTA button label */
   ctaLabel?: string;
+  /** Show Log in / Dashboard button (hidden by default until auth is ready) */
+  showLoginButton?: boolean;
 }
 
 const DEFAULT_LINKS: NavLinkItem[] = [
@@ -67,6 +69,7 @@ export function Navigation({
   loginHref = '/api/auth/signin',
   loginLabel = 'Log in',
   ctaLabel = 'Get Early Access',
+  showLoginButton = false,
 }: NavigationProps) {
   const { data: session, status } = useSession();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -139,22 +142,26 @@ export function Navigation({
                 </Link>
               )
             )}
-            <Link
-              href={authHref}
-              className="font-body text-[0.9375rem] font-medium text-gray-dark no-underline transition-colors hover:text-navy md:hidden"
-              onClick={closeMobileMenu}
-            >
-              {authLabel}
-            </Link>
+            {showLoginButton && (
+              <Link
+                href={authHref}
+                className="font-body text-[0.9375rem] font-medium text-gray-dark no-underline transition-colors hover:text-navy md:hidden"
+                onClick={closeMobileMenu}
+              >
+                {authLabel}
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              href={authHref}
-              className="hidden font-body text-[0.9375rem] font-medium text-gray-dark no-underline transition-colors hover:text-navy sm:inline-block"
-            >
-              {authLabel}
-            </Link>
+            {showLoginButton && (
+              <Link
+                href={authHref}
+                className="hidden font-body text-[0.9375rem] font-medium text-gray-dark no-underline transition-colors hover:text-navy sm:inline-block"
+              >
+                {authLabel}
+              </Link>
+            )}
             <button
               type="button"
               className="inline-flex items-center justify-center whitespace-nowrap rounded-landing-full border-2 border-transparent bg-navy px-6 py-3 font-body text-base font-semibold text-white shadow-landing-md transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-light hover:bg-gray-dark hover:shadow-landing-lg"
