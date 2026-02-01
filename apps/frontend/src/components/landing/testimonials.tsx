@@ -4,6 +4,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 import { cn } from '@/shared/lib/utils';
+import { StructuredData } from '@/components/seo';
+import { generateReviewSchema } from '@/shared/lib/schemas';
 
 /** Single testimonial card data */
 export interface TestimonialCard {
@@ -96,8 +98,23 @@ export function Testimonials({
   items = DEFAULT_TESTIMONIALS,
   socialProofText = '4.9/5 from 1,000+ reviews',
 }: TestimonialsProps) {
+  // Generate review schemas for each testimonial
+  const reviewSchemas = items.map((item) =>
+    generateReviewSchema({
+      author: item.author,
+      role: item.role,
+      company: item.company,
+      quote: item.quote,
+      rating: 5, // All testimonials are 5-star reviews
+    })
+  );
+
   return (
-    <section className={cn('bg-white py-[calc(6rem*1.5)]', className)}>
+    <>
+      {/* Schema.org Review structured data */}
+      <StructuredData schemas={reviewSchemas} />
+
+      <section className={cn('bg-white py-[calc(6rem*1.5)]', className)}>
       <div className="container mx-auto max-w-[1280px] px-8">
         <motion.div
           className="mb-16 text-center"
@@ -171,6 +188,7 @@ export function Testimonials({
           </div>
         </motion.div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }
