@@ -1,5 +1,7 @@
 import Parser from 'rss-parser';
+import type { PrismaClient } from '@prisma/client';
 import type { AIService } from './ai/types';
+import { TrendSourceManager } from './trend-source-manager';
 
 // Response type for trend scouting
 export interface TrendStory {
@@ -17,44 +19,81 @@ export interface TrendResult {
 // RSS fetch timeout in milliseconds
 const RSS_TIMEOUT_MS = 10000;
 
+// Fallback when DB has no trend data (backward compatibility)
+const FALLBACK_SOURCES = [
+  'https://news.google.com/rss/search?q=email+productivity+tips+OR+inbox+zero+strategies&hl=en-US&gl=US&ceid=US:en',
+  'https://news.google.com/rss/search?q=executive+time+management+OR+business+communication+efficiency&hl=en-US&gl=US&ceid=US:en',
+  'https://lifehacker.com/rss',
+];
+
+const FALLBACK_KEYWORDS = [
+  'email productivity',
+  'email management',
+  'inbox zero',
+  'email automation',
+  'time management',
+  'executive productivity',
+  'business communication',
+  'workflow efficiency',
+];
+
 export class TrendService {
   private parser = new Parser({
     timeout: RSS_TIMEOUT_MS,
   });
   private ai: AIService;
+  private prisma: PrismaClient | null;
+  private sourceManager: TrendSourceManager | null;
 
-  // Google News RSS search queries targeting our niche: busy professionals and executives
-  private sources = [
-    'https://news.google.com/rss/search?q=email+productivity+tips+OR+inbox+zero+strategies&hl=en-US&gl=US&ceid=US:en',
-    'https://news.google.com/rss/search?q=executive+time+management+OR+business+communication+efficiency&hl=en-US&gl=US&ceid=US:en',
-    'https://lifehacker.com/rss', // Keep Lifehacker as it's often relevant
-  ];
-
-  // Keywords to search for in headlines (still useful for pre-filtering)
-  private keywords = [
-    'email productivity',
-    'email management',
-    'inbox zero',
-    'email automation',
-    'time management',
-    'executive productivity',
-    'business communication',
-    'workflow efficiency',
-  ];
-
-  constructor(aiService: AIService) {
+  constructor(aiService: AIService, prisma?: PrismaClient) {
     this.ai = aiService;
+    this.prisma = prisma ?? null;
+    this.sourceManager = this.prisma ? new TrendSourceManager(this.prisma) : null;
+  }
+
+  private async getSources(): Promise<string[]> {
+    if (this.sourceManager) {
+      try {
+        const urls = await this.sourceManager.getFetchUrls({
+          includeDynamicGoogleNews: true,
+          dynamicKeywordLimit: 10,
+        });
+        if (urls.length > 0) return urls;
+      } catch (e) {
+        console.warn('[TrendService] Failed to load sources from DB, using fallback:', e);
+      }
+    }
+    return FALLBACK_SOURCES;
+  }
+
+  private async getKeywords(): Promise<string[]> {
+    if (this.prisma) {
+      try {
+        const rows = await this.prisma.trendKeyword.findMany({
+          where: { isActive: true },
+          orderBy: { relevanceScore: 'desc' },
+          select: { keyword: true },
+        });
+        if (rows.length > 0) return rows.map((r) => r.keyword);
+      } catch (e) {
+        console.warn('[TrendService] Failed to load keywords from DB, using fallback:', e);
+      }
+    }
+    return FALLBACK_KEYWORDS;
   }
 
   async findNewTopics(): Promise<TrendResult> {
+    const sources = await this.getSources();
+    const keywords = await this.getKeywords();
+
     const allItems: Array<{ title: string; link: string; source: string }> = [];
     const errors: string[] = [];
     const sourceStats: Record<string, number> = {};
 
     // 1. Fetch Headlines with timeout handling and debugging
-    console.log(`[TrendService] Starting RSS fetch from ${this.sources.length} sources...`);
-    
-    const fetchPromises = this.sources.map(async (source) => {
+    console.log(`[TrendService] Starting RSS fetch from ${sources.length} sources...`);
+
+    const fetchPromises = sources.map(async (source) => {
       const sourceName = source.includes('google.com') 
         ? `Google News (${source.split('q=')[1]?.split('&')[0] || 'unknown query'})`
         : source;
@@ -102,9 +141,9 @@ export class TrendService {
     }
 
     // 2. Pre-filter by keywords (faster than sending everything to AI)
-    const keywordFiltered = allItems.filter(item => {
+    const keywordFiltered = allItems.filter((item) => {
       const titleLower = item.title.toLowerCase();
-      return this.keywords.some(keyword => titleLower.includes(keyword.toLowerCase()));
+      return keywords.some((keyword) => titleLower.includes(keyword.toLowerCase()));
     });
 
     console.log(`[TrendService] After keyword filtering: ${keywordFiltered.length} items (from ${allItems.length} total)`);

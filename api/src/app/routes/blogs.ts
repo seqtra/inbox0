@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient, BlogPostStatus, BlogTopicStatus } from '@prisma/client';
 import { getAIService } from '../../services/ai';
 import { TrendService } from '../../services/trend.service';
+import { SEOIntelligenceService } from '../../services/seo-intelligence.service';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
@@ -21,6 +22,10 @@ const BlogDataSchema = z.object({
   content: z.string().min(100),
   seoTitle: z.string().max(60).optional(),
   seoDescription: z.string().max(160).optional(),
+  primaryKeyword: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  faqSection: z.string().optional(),
+  metaScore: z.number().min(0).max(100).optional(),
 });
 
 // Reference to fastify instance for the requireAdmin hook
@@ -69,8 +74,8 @@ export default async function (instance: FastifyInstance) {
     const { topicId, topic: customTopic } = parseResult.data;
     let topicText: string;
     let sourceTopic: { id: string } | null = null;
-    
-    // If generating from an approved topic
+    let topicMeta: { primaryKeyword?: string; keywords?: string[]; clusterName?: string } = {};
+
     if (topicId) {
       const dbTopic = await prisma.blogTopic.findUnique({ where: { id: topicId } });
       if (!dbTopic) {
@@ -81,21 +86,31 @@ export default async function (instance: FastifyInstance) {
       }
       topicText = `${dbTopic.title}. Angle: ${dbTopic.angle || 'General coverage'}`;
       sourceTopic = { id: dbTopic.id };
+      if (dbTopic.keywords?.length) topicMeta.keywords = dbTopic.keywords;
+      if (dbTopic.clusterName) topicMeta.clusterName = dbTopic.clusterName;
     } else {
       topicText = customTopic!;
     }
 
-    // Prompt Engineering for SEO
+    const keywordContext =
+      topicMeta.primaryKeyword || topicMeta.keywords?.length
+        ? ` Target keyword: ${topicMeta.primaryKeyword ?? topicMeta.keywords?.[0] ?? ''}. Related keywords: ${(topicMeta.keywords ?? []).join(', ')}.`
+        : '';
+    const clusterContext = topicMeta.clusterName ? ` Content cluster: ${topicMeta.clusterName}.` : '';
+
     const systemPrompt = `
       You are an expert SEO Content Writer for "Inbox0", an AI-powered email management app.
-      Write a comprehensive, engaging blog post about the given topic.
+      Write a comprehensive, engaging blog post about the given topic.${keywordContext}${clusterContext}
       
       Return the response in JSON format with:
       - title: Compelling headline (max 100 chars)
       - slug: URL-friendly kebab-case (max 60 chars, lowercase letters, numbers, hyphens only)
-      - content: Full article in Markdown format with H2/H3 headers, bullet points, and actionable tips
+      - content: Full article in Markdown with H2/H3, bullet points, actionable tips. Include a short "FAQ" or "Frequently Asked Questions" section at the end with 2-3 Q&A pairs when relevant.
       - seoTitle: Meta title optimized for Google (max 60 chars)
       - seoDescription: Meta description with call-to-action (max 160 chars)
+      - primaryKeyword: (optional) main target keyword
+      - keywords: (optional) array of 3-5 related keywords
+      - metaScore: (optional) self-assessed SEO score 0-100
     `;
 
     try {
@@ -130,12 +145,11 @@ export default async function (instance: FastifyInstance) {
         return reply.status(502).send({ error: 'Failed to parse OpenAI response as JSON' });
       }
 
-      // Handle slug collisions
       const uniqueSlug = await generateUniqueSlug(blogData.slug);
+      const wordCount = blogData.content.split(/\s+/).filter(Boolean).length;
+      const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
-      // Save to Database with transaction
       const post = await prisma.$transaction(async (tx) => {
-        // Create the blog post
         const newPost = await tx.blogPost.create({
           data: {
             title: blogData.title,
@@ -146,19 +160,32 @@ export default async function (instance: FastifyInstance) {
             status: BlogPostStatus.DRAFT,
             authorId: request.user?.id,
             topicId: sourceTopic?.id,
+            primaryKeyword: blogData.primaryKeyword ?? topicMeta.primaryKeyword ?? undefined,
+            keywords: blogData.keywords ?? topicMeta.keywords ?? [],
+            clusterName: topicMeta.clusterName ?? undefined,
+            wordCount,
+            readingTime,
+            metaScore: blogData.metaScore ?? undefined,
           }
         });
-        
-        // Update source topic status if applicable
         if (sourceTopic) {
           await tx.blogTopic.update({
             where: { id: sourceTopic.id },
             data: { status: BlogTopicStatus.GENERATED }
           });
         }
-        
         return newPost;
       });
+
+      if (process.env['ENABLE_AUTO_INTERNAL_LINKING'] === 'true') {
+        try {
+          const seo = new SEOIntelligenceService(prisma, ai);
+          const suggestions = await seo.getInternalLinkSuggestions(post.id, 5);
+          await seo.applyInternalLinks(post.id, suggestions);
+        } catch (linkErr) {
+          console.warn('Internal linking failed (non-fatal):', linkErr);
+        }
+      }
 
       return post;
       
@@ -242,7 +269,7 @@ export default async function (instance: FastifyInstance) {
 
   // 5. Scout Trends - Find new blog topics (Protected - Admin only)
   fastify.get('/admin/scout-trends', { preHandler: [requireAdmin] }, async (request, reply) => {
-    const trendService = new TrendService(ai);
+    const trendService = new TrendService(ai, prisma);
 
     try {
       const ideas = await trendService.findNewTopics();
@@ -837,7 +864,7 @@ export default async function (instance: FastifyInstance) {
       }
 
       // Real mode: Use actual RSS feeds and OpenAI
-      const trendService = new TrendService(ai);
+      const trendService = new TrendService(ai, prisma);
 
       try {
         const ideas = await trendService.findNewTopics();
