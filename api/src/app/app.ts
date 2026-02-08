@@ -16,9 +16,14 @@ export interface AppOptions {}
 export async function app(fastify: FastifyInstance, opts: AppOptions) {
   // Place here your custom code!
   fastify.register(cookie);
-  // Register CORS to allow frontend (localhost:4200) to access API (localhost:3000)
+  // Register CORS: dev (direct) + Nginx same-origin (localhost/127.0.0.1). Add production origin (e.g. https://yourdomain.com) via env when deploying.
   fastify.register(cors, {
-    origin: ['http://localhost:4200', 'http://127.0.0.1:4200'],
+    origin: [
+      'http://localhost:4200',
+      'http://127.0.0.1:4200',
+      'http://localhost',
+      'http://127.0.0.1',
+    ],
     credentials: true,
   });
   // MANUALLY REGISTER PLUGINS

@@ -1,4 +1,31 @@
+# Dependencies and build artifacts
 node_modules
 dist
+.nx
+coverage
+
+# Git and env (never send secrets into build context)
 .git
+.gitignore
 .env
+.env.*
+!.env.example
+
+# Docs and tooling (not needed in image)
+.cursorignore
+*.md
+docker-compose*.yml
+
+# Test and E2E (not needed for production build)
+apps/frontend-e2e
+**/*.spec.ts
+**/*.spec.tsx
+**/e2e/**
+**/playwright-report/**
+**/test-results/**
+
+# Infrastructure as code (not needed in app images)
+terraform
+
+# Logs
+*.log
