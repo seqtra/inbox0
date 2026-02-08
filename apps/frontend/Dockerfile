@@ -33,6 +33,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Next.js build loads NextAuth/Prisma and needs DATABASE_URL at build time (format only; no connection during build)
+ARG DATABASE_URL=postgresql://devuser:devpassword@localhost:5432/email_whatsapp_bridge
+ENV DATABASE_URL=${DATABASE_URL}
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package*.json ./

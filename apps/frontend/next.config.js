@@ -17,8 +17,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    // Enable instrumentation hook for PostHog
-    instrumentationHook: true,
   },
   
   // Keep /api/auth/* on Next.js (NextAuth); proxy all other /api/* to Fastify backend

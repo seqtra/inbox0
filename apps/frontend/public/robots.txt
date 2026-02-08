@@ -1,0 +1,32 @@
+# Robots.txt for inbox0.com
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin and dashboard areas from search engines
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /api/
+
+# Allow blog content
+Allow: /blog/
+
+# Sitemap location
+Sitemap: https://inbox0.com/sitemap.xml
+
+# Crawl-delay for specific bots (optional, adjust if needed)
+# User-agent: Googlebot
+# Crawl-delay: 0
+
+# Block AI scrapers if needed (uncomment to enable)
+# User-agent: GPTBot
+# Disallow: /
+# User-agent: ChatGPT-User
+# Disallow: /
+# User-agent: CCBot
+# Disallow: /
+# User-agent: anthropic-ai
+# Disallow: /
+# User-agent: Claude-Web
+# Disallow: /

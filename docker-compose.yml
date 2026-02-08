@@ -16,8 +16,7 @@
 #   Stop all services: docker-compose down
 #   View logs: docker-compose logs -f [service-name]
 ##
-
-version: '3.9'
+# Note: 'version' is obsolete in Compose V2 and ignored; left out to avoid warnings.
 
 services:
   ##
@@ -108,8 +107,13 @@ services:
     build:
       context: .
       dockerfile: ./apps/frontend/Dockerfile
+      args:
+        # Required at build time so NextAuth/Prisma can be instantiated during next build
+        DATABASE_URL: ${DATABASE_URL:-postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge}
     container_name: email-whatsapp-frontend
     restart: unless-stopped
+    ports:
+      - '4200:4200'
     environment:
       # Next.js configuration (API URL via Nginx when using docker-compose)
       NODE_ENV: production

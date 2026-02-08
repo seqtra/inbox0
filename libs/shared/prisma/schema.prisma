@@ -131,6 +131,78 @@ enum BlogTopicStatus {
   GENERATED // Topic has been converted to a BlogPost
 }
 
+// Dynamic trend-driven blog: keyword management with performance tracking
+model TrendKeyword {
+  id               String   @id @default(cuid())
+  keyword          String   @unique
+  category         String?  // e.g. "email productivity", "automation"
+  searchVolume     Int?     // Estimated monthly searches
+  competition      Float?   // 0.0-1.0
+  relevanceScore   Float    // 0.0-1.0, AI-scored relevance to Inbox0
+  trendScore       Float?   // 0.0-1.0
+  trendDirection   String?  // "rising", "stable", "declining"
+  isActive         Boolean  @default(true)
+  usageCount       Int      @default(0)
+  discoverySource  String?  // "google_trends", "newsapi", "reddit", "ai", etc.
+  clusterId        String?
+  cluster          KeywordCluster? @relation(fields: [clusterId], references: [id])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([isActive, relevanceScore])
+  @@index([clusterId])
+  @@map("trend_keywords")
+}
+
+// Dynamic RSS/API source management
+model TrendSource {
+  id                 String   @id @default(cuid())
+  name               String
+  type               String   // "rss", "api", "social"
+  url                String   @db.Text
+  isActive           Boolean  @default(true)
+  priority           Int      @default(0) // Higher = more important
+  avgRelevanceScore  Float?
+  articlesFound      Int      @default(0)
+  articlesUsed       Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("trend_sources")
+}
+
+// Content pillar organization (e.g. "Email Productivity", "AI Automation")
+model KeywordCluster {
+  id               String         @id @default(cuid())
+  name             String
+  description      String?        @db.Text
+  primaryKeywords  String[]       // JSON array of primary keywords
+  priority         Int            @default(0)
+  totalPosts       Int            @default(0)
+  keywords         TrendKeyword[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@map("keyword_clusters")
+}
+
+// Automated internal linking for SEO
+model InternalLink {
+  id         String   @id @default(cuid())
+  fromPostId String
+  toPostId   String
+  anchorText String   @db.Text
+  linkType   String?  // "contextual", "related", "pillar"
+  fromPost   BlogPost @relation("InternalLinksFrom", fields: [fromPostId], references: [id], onDelete: Cascade)
+  toPost     BlogPost @relation("InternalLinksTo", fields: [toPostId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([fromPostId, toPostId])
+  @@index([fromPostId])
+  @@index([toPostId])
+  @@map("internal_links")
+}
+
 model BlogPost {
   id          String         @id @default(cuid())
   title       String
@@ -147,6 +219,19 @@ model BlogPost {
   // Relationship to source topic (if AI-generated from trend)
   topicId     String?        @unique
   topic       BlogTopic?     @relation(fields: [topicId], references: [id])
+  
+  // SEO / trend-driven fields
+  primaryKeyword String?
+  keywords       String[]    @default([]) // Related keywords used in post
+  clusterName    String?
+  wordCount      Int?
+  readingTime    Int?        // Minutes
+  metaScore      Float?      // SEO score 0-100
+  lastRefreshedAt DateTime?
+  
+  // Internal linking
+  linksFrom   InternalLink[] @relation("InternalLinksFrom")
+  linksTo     InternalLink[] @relation("InternalLinksTo")
   
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -168,6 +253,12 @@ model BlogTopic {
   approvedBy      String?         // User ID who approved
   approvedAt      DateTime?
   rejectedReason  String?         // Why it was rejected
+  
+  // Trend-driven / SEO fields
+  keywords        String[]        @default([]) // Keywords this topic targets
+  clusterName     String?
+  searchVolume    Int?
+  difficulty      Float?          // 0.0-1.0 estimated competition
   
   // Generated post relationship
   generatedPost   BlogPost?

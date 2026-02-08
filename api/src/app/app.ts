@@ -8,6 +8,7 @@ import root from './routes/root';
 import users from './routes/users';
 import emails from './routes/emails';
 import blogs from './routes/blogs';
+import adminTrends from './routes/admin/trends';
 import trello from './routes/trello';
 /* eslint-disable-next-line */
 export interface AppOptions {}
@@ -38,4 +39,5 @@ export async function app(fastify: FastifyInstance, opts: AppOptions) {
   fastify.register(emails, { prefix: '/api/emails' });
   fastify.register(trello, { prefix: '/api/trello' });
   fastify.register(blogs, { prefix: '/api' }); // Blog routes under /api
+  fastify.register(adminTrends, { prefix: '/api' }); // Admin trend/keywords/sources/SEO
 }
