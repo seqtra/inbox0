@@ -1,8 +1,18 @@
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import { CronExpressionParser } from 'cron-parser'; 
+import { PrismaClient, type UserPreferences as PrismaUserPreferences } from '@prisma/client';
+import { CronExpressionParser } from 'cron-parser';
 
 const prisma = new PrismaClient();
+const DEFAULT_CRON = '0 9 * * *';
+
+type UserPreferencesUpdateBody = Partial<
+  Omit<PrismaUserPreferences, 'id' | 'userId'>
+>;
+
+function getNextRunAt(cronExpression: string, timezone: string): Date {
+  const interval = CronExpressionParser.parse(cronExpression, { tz: timezone });
+  return interval.next().toDate();
+}
 
 export default async function (fastify: FastifyInstance) {
   
@@ -11,7 +21,10 @@ export default async function (fastify: FastifyInstance) {
 
   // GET /me - Get full user context
   fastify.get('/me', async (request, reply) => {
-    const userId = request.user!.id;
+    const userId = request.user?.id;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
 
     // Fetch user with relations
     const user = await prisma.user.findUnique({
@@ -31,10 +44,9 @@ export default async function (fastify: FastifyInstance) {
     
     let cronJob = user.cronJob;
     if (!cronJob) {
-        const defaultCron = "0 9 * * *"; // 9 AM
+        const defaultCron = DEFAULT_CRON; // 9 AM
         // Note: Defaulting to UTC is acceptable for initial lazy-create
-        const interval = CronExpressionParser.parse(defaultCron, { tz: 'UTC' });
-        const nextRun = interval.next().toDate();
+        const nextRun = getNextRunAt(defaultCron, 'UTC');
 
         cronJob = await prisma.cronJob.create({ 
             data: { 
@@ -57,16 +69,19 @@ export default async function (fastify: FastifyInstance) {
   });
   // PATCH /me/preferences
   fastify.patch('/me/preferences', async (request, reply) => {
-    const userId = request.user!.id;
-    const body = request.body as any;
+    const userId = request.user?.id;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+    const body = request.body as UserPreferencesUpdateBody;
 
-    const updated = await prisma.userPreferences.update({
+    const updated = await prisma.userPreferences.upsert({
       where: { userId },
-      data: {
+      create: {
+        userId,
         ...body,
-        // Prevent ID injection
-        id: undefined, userId: undefined 
-      }
+      },
+      update: body,
     });
 
     return { success: true, data: updated };
@@ -74,8 +89,14 @@ export default async function (fastify: FastifyInstance) {
 
   // POST /me/schedule
   fastify.post('/me/schedule', async (request, reply) => {
-    const userId = request.user!.id;
-    const { cronExpression, timezone } = request.body as any;
+    const userId = request.user?.id;
+    if (!userId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+    const { cronExpression, timezone } = request.body as {
+      cronExpression: string;
+      timezone?: string;
+    };
 
     // 1. Fetch current preferences to get the correct timezone if not provided
     // We need the timezone to calculate the cron accurately (e.g. 9 AM in London vs 9 AM in NYC)
@@ -84,31 +105,39 @@ export default async function (fastify: FastifyInstance) {
 
     // Update Timezone if provided
     if (timezone) {
-        await prisma.userPreferences.update({
-            where: { userId },
-            data: { timezone, isManualTz: true }
+        await prisma.userPreferences.upsert({
+          where: { userId },
+          create: {
+            userId,
+            timezone,
+            isManualTz: true,
+          },
+          update: { timezone, isManualTz: true }
         });
     }
 
     // [FIX]: Calculate accurate nextRunAt
     try {
-      const interval = CronExpressionParser.parse(cronExpression, {
-        tz: targetTimezone, // Use the user's timezone!
-      });
-      
-      const nextRunAt = interval.next().toDate();
+      const nextRunAt = getNextRunAt(cronExpression, targetTimezone);
 
-      const updatedCron = await prisma.cronJob.update({
+      const updatedCron = await prisma.cronJob.upsert({
           where: { userId },
-          data: { 
-              cronExpression,
-              nextRunAt: nextRunAt 
+          create: {
+            userId,
+            cronExpression,
+            nextRunAt,
+            isActive: true,
+          },
+          update: { 
+            cronExpression,
+            nextRunAt,
+            isActive: true,
           }
       });
 
       return { success: true, data: updatedCron };
 
-    } catch (err) {
+    } catch {
       // Handle invalid cron expression
       return reply.status(400).send({ success: false, error: "Invalid Cron Expression" });
     }
@@ -116,8 +145,12 @@ export default async function (fastify: FastifyInstance) {
 
   // GET /me/stats
   fastify.get('/me/stats', async (request, reply) => {
+      const userId = request.user?.id;
+      if (!userId) {
+        return reply.status(401).send({ success: false, error: 'Unauthorized' });
+      }
       const stats = await prisma.usageStat.findMany({
-          where: { userId: request.user!.id },
+          where: { userId },
           orderBy: { date: 'desc' },
           take: 30 // Last 30 days
       });

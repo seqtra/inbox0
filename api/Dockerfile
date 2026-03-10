@@ -27,6 +27,7 @@ COPY libs/shared/prisma ./libs/shared/prisma
 
 # Install all dependencies (npm ci for reproducible builds, matches CI)
 RUN npm ci
+RUN mkdir -p /app/api/node_modules /app/libs/shared/node_modules
 ##
 # Build Stage
 ##
@@ -36,6 +37,8 @@ WORKDIR /app
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/api/node_modules ./api/node_modules
+COPY --from=deps /app/libs/shared/node_modules ./libs/shared/node_modules
 COPY --from=deps /app/package*.json ./
 
 # Copy source code
@@ -64,9 +67,11 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 fastify
 
-# Copy built application from builder
-COPY --from=builder --chown=fastify:nodejs /app/api/dist ./
+# Copy built application and the workspace dependency tree it resolves against
+COPY --from=builder --chown=fastify:nodejs /app/api/dist ./api/dist
 COPY --from=builder --chown=fastify:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=fastify:nodejs /app/api/node_modules ./api/node_modules
+COPY --from=builder --chown=fastify:nodejs /app/libs/shared/node_modules ./libs/shared/node_modules
 
 # Switch to non-root user
 USER fastify
@@ -85,4 +90,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
-CMD ["node", "main.js"]
+CMD ["node", "api/dist/main.js"]
