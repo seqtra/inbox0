@@ -1,0 +1,21 @@
+##
+# Docker Compose override for CI/CD deployment
+#
+# Used by GitHub Actions when deploying. Overrides build directives with
+# pre-built images from GitHub Container Registry (ghcr.io).
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+#
+# Required env vars (set by CI):
+#   API_IMAGE      - Full registry path (e.g. ghcr.io/owner/inbox0-api:abc123)
+#   FRONTEND_IMAGE - Full registry path for frontend
+##
+
+services:
+  api:
+    image: ${API_IMAGE}
+    build: ~  # Disable build, use image only
+
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    build: ~  # Disable build, use image only

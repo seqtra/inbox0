@@ -52,6 +52,9 @@ test-output
 .env.local
 .env.*.local
 
+# Deploy keys (private key - never commit!)
+.deploy-keys/
+
 # Terraform state files (may contain sensitive data)
 terraform/*.tfstate
 terraform/*.tfstate.*

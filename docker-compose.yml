@@ -79,7 +79,7 @@ services:
       # Gmail API credentials (get these from Google Cloud Console)
       GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID}
       GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET}
-      GMAIL_REDIRECT_URI: http://localhost:3000/auth/google/callback
+      GMAIL_REDIRECT_URI: https://inbox-0.com/api/auth/callback/google
 
       # Twilio WhatsApp credentials (get these from Twilio Console)
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
@@ -117,7 +117,7 @@ services:
     environment:
       # Next.js configuration (API URL via Nginx when using docker-compose)
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://inbox-0.com/api}
       NEXT_TELEMETRY_DISABLED: 1
       NEXT_PUBLIC_POSTHOG_KEY: ${NEXT_PUBLIC_POSTHOG_KEY}
       NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST}
@@ -135,8 +135,11 @@ services:
     restart: unless-stopped
     ports:
       - '80:80'
+      - '443:443'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
     depends_on:
       - api
       - frontend
@@ -149,6 +152,8 @@ services:
 ##
 volumes:
   postgres_data:
+    driver: local
+  certbot_webroot:
     driver: local
 
 ##
