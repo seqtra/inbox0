@@ -97,16 +97,18 @@ jobs:
           host: ${{ secrets.DEPLOY_SERVER }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: DEPLOY_PATH,REGISTRY,API_IMAGE,FRONTEND_IMAGE,GHCR_USER,GHCR_TOKEN
+          envs: DEPLOY_PATH,DEPLOY_BRANCH,REGISTRY,API_IMAGE,FRONTEND_IMAGE,GHCR_USER,GHCR_TOKEN
           script: |
             set -e
             cd ${DEPLOY_PATH:-/opt/inbox0}
+            git pull --ff-only origin ${DEPLOY_BRANCH:-main}
             echo "$GHCR_TOKEN" | docker login $REGISTRY -u $GHCR_USER --password-stdin
             docker compose -f docker-compose.yml -f docker-compose.ci.yml pull api frontend
             docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d api frontend
             docker image prune -f
         env:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_BRANCH: ${{ github.ref_name }}
           REGISTRY: ${{ env.REGISTRY }}
           API_IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/inbox0-api:${{ github.sha }}
           FRONTEND_IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/inbox0-frontend:${{ github.sha }}
