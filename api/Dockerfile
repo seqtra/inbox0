@@ -46,8 +46,9 @@ ENV DATABASE_URL="postgresql://localhost:5432/dummy"
 
 RUN npx prisma generate --schema=./libs/shared/prisma/schema.prisma
 
-# Build the API using NX (skip cache for reproducible CI builds)
-RUN npx nx build @email-whatsapp-bridge/api --skip-nx-cache
+# Build the API using NX
+# NX_DAEMON=false: Disable daemon in Docker (avoids exit 1 in CI)
+RUN NX_DAEMON=false npx nx build api --skip-nx-cache
 ##
 # Production Stage
 ##
