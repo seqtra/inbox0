@@ -92,7 +92,7 @@ describe('AnthropicAIService', () => {
     });
 
     it('returns fallback EmailSummary when API throws', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(jest.fn());
       mockCreate.mockRejectedValue(new Error('Network error'));
 
       const service = new AnthropicAIService();

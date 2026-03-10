@@ -74,7 +74,7 @@ export default async function (instance: FastifyInstance) {
     const { topicId, topic: customTopic } = parseResult.data;
     let topicText: string;
     let sourceTopic: { id: string } | null = null;
-    let topicMeta: { primaryKeyword?: string; keywords?: string[]; clusterName?: string } = {};
+    const topicMeta: { primaryKeyword?: string; keywords?: string[]; clusterName?: string } = {};
 
     if (topicId) {
       const dbTopic = await prisma.blogTopic.findUnique({ where: { id: topicId } });

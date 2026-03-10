@@ -58,7 +58,11 @@ export default async function (fastify: FastifyInstance) {
       return { success: true, data: emails };
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ error: 'Failed to fetch emails from Gmail' });
+      const message =
+        process.env.NODE_ENV !== 'production' && error instanceof Error
+          ? error.message
+          : 'Failed to fetch emails from Gmail';
+      return reply.status(500).send({ error: message });
     }
   });
 
@@ -89,7 +93,11 @@ export default async function (fastify: FastifyInstance) {
       return { success: true, data: { count: emails.length } };
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ error: 'Failed to sync emails from Gmail' });
+      const message =
+        process.env.NODE_ENV !== 'production' && error instanceof Error
+          ? error.message
+          : 'Failed to sync emails from Gmail';
+      return reply.status(500).send({ error: message });
     }
   });
 

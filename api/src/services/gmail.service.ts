@@ -17,7 +17,11 @@ import { buildGmailQuery } from '@email-whatsapp-bridge/shared';
 // OAuth2 credentials from environment variables
 const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID || '';
 const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET || '';
-const GMAIL_REDIRECT_URI = process.env.GMAIL_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback';/**
+// Must match NextAuth callback URL used during OAuth (for token refresh)
+const GMAIL_REDIRECT_URI =
+  process.env.GMAIL_REDIRECT_URI || 'http://localhost:4200/api/auth/callback/google';
+
+/**
  * Gmail Service Class
  *
  * Provides methods for interacting with Gmail API.
@@ -116,7 +120,7 @@ export class GmailService {
    * @param maxResults - Maximum number of emails to fetch (default: 50)
    * @returns Array of parsed Email objects
    */
-  async fetchEmails(filters?: EmailFilters, maxResults: number = 50): Promise<Email[]> {
+  async fetchEmails(filters?: EmailFilters, maxResults = 50): Promise<Email[]> {
     try {
       // Build Gmail query string from filters
       const query = filters ? buildGmailQuery(filters) : '';
@@ -137,8 +141,9 @@ export class GmailService {
 
       return emails.filter((email): email is Email => email !== null);
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
       console.error('Error fetching emails:', error);
-      throw new Error('Failed to fetch emails from Gmail');
+      throw new Error(`Failed to fetch emails from Gmail: ${msg}`);
     }
   }
 

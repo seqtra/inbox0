@@ -25,8 +25,8 @@ COPY libs/shared/package*.json ./libs/shared/
 # Copy Prisma schema (needed for postinstall script)
 COPY libs/shared/prisma ./libs/shared/prisma
 
-# Install all dependencies (including dev dependencies for build)
-RUN npm install
+# Install all dependencies (npm ci for reproducible builds, matches CI)
+RUN npm ci
 ##
 # Build Stage
 ##
@@ -40,10 +40,14 @@ COPY --from=deps /app/package*.json ./
 
 # Copy source code
 COPY . .
+
+# Prisma generate (dummy DATABASE_URL for client generation; not used at runtime)
+ENV DATABASE_URL="postgresql://localhost:5432/dummy"
+
 RUN npx prisma generate --schema=./libs/shared/prisma/schema.prisma
-# Build the API using NX
-# This will compile TypeScript and bundle the application
-RUN npx nx build api
+
+# Build the API using NX (skip cache for reproducible CI builds)
+RUN npx nx build @email-whatsapp-bridge/api --skip-nx-cache
 ##
 # Production Stage
 ##
@@ -53,7 +57,7 @@ FROM node:20-alpine AS runner
 RUN apk add --no-cache dumb-init openssl libc6-compat
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Create a non-root user for security
 RUN addgroup --system --gid 1001 nodejs

@@ -117,25 +117,37 @@ Respond with a single JSON object only (no markdown, no code fence), with these 
 - "actionItems": array of strings (specific tasks or actions)
 - "sentiment": one of "positive" | "neutral" | "negative"`;
 
-    const result = await this.chatCompletion({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: emailContext },
-      ],
-      response_format: { type: 'json_object' },
-    });
+    try {
+      const result = await this.chatCompletion({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: emailContext },
+        ],
+        response_format: { type: 'json_object' },
+      });
 
-    const raw = result.choices[0]?.message?.content;
-    if (!raw) {
-      throw new Error('Empty AI response');
+      const raw = result.choices[0]?.message?.content;
+      if (!raw) {
+        throw new Error('Empty AI response');
+      }
+
+      const parsed = JSON.parse(raw);
+      const validated = EmailSummarySchema.parse(parsed);
+      return {
+        emailId: email.id,
+        ...validated,
+      };
+    } catch (err) {
+      console.error('Error analyzing email:', err);
+      return {
+        emailId: email.id,
+        summary: 'Could not generate summary due to an error.',
+        priority: 'medium',
+        category: 'other',
+        actionItems: [],
+        sentiment: 'neutral',
+      };
     }
-
-    const parsed = JSON.parse(raw);
-    const validated = EmailSummarySchema.parse(parsed);
-    return {
-      emailId: email.id,
-      ...validated,
-    };
   }
 
   async summarizeInbox(emails: Email[]): Promise<InboxSummary> {

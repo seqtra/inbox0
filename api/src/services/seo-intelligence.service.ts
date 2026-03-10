@@ -62,7 +62,7 @@ export class SEOIntelligenceService {
   /**
    * Get content gap opportunities: keywords we don't yet cover well (simplified: active keywords with no/few posts).
    */
-  async getContentGaps(limit: number = 20): Promise<ContentGapSuggestion[]> {
+  async getContentGaps(limit = 20): Promise<ContentGapSuggestion[]> {
     const keywords = await this.prisma.trendKeyword.findMany({
       where: { isActive: true },
       orderBy: { relevanceScore: 'desc' },
@@ -95,7 +95,7 @@ export class SEOIntelligenceService {
   /**
    * Find related posts for a given post and suggest internal links (anchor text via AI).
    */
-  async getInternalLinkSuggestions(postId: string, maxLinks: number = 5): Promise<InternalLinkSuggestion[]> {
+  async getInternalLinkSuggestions(postId: string, maxLinks = 5): Promise<InternalLinkSuggestion[]> {
     const post = await this.prisma.blogPost.findUnique({
       where: { id: postId },
       select: { id: true, title: true, content: true, primaryKeyword: true, keywords: true, clusterName: true },
@@ -226,7 +226,7 @@ export class SEOIntelligenceService {
   /**
    * Find stale posts (older than 6 months, not refreshed recently) for content refresh.
    */
-  async getStalePosts(limit: number = 2): Promise<Array<{ id: string; title: string; slug: string }>> {
+  async getStalePosts(limit = 2): Promise<Array<{ id: string; title: string; slug: string }>> {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     const posts = await this.prisma.blogPost.findMany({

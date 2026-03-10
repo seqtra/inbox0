@@ -32,7 +32,7 @@ export class TrendSourceManager {
   /**
    * Build Google News RSS URLs for the top N active keywords.
    */
-  async getGoogleNewsUrlsFromKeywords(limit: number = 10): Promise<string[]> {
+  async getGoogleNewsUrlsFromKeywords(limit = 10): Promise<string[]> {
     const keywords = await this.prisma.trendKeyword.findMany({
       where: { isActive: true },
       orderBy: { relevanceScore: 'desc' },
@@ -114,7 +114,7 @@ export class TrendSourceManager {
   /**
    * Deactivate sources with success rate < 10% after at least 20 articles found.
    */
-  async deactivateUnderperformers(thresholdArticles: number = 20, minSuccessRate: number = 0.1): Promise<number> {
+  async deactivateUnderperformers(thresholdArticles = 20, minSuccessRate = 0.1): Promise<number> {
     const sources = await this.prisma.trendSource.findMany({
       where: { isActive: true, articlesFound: { gte: thresholdArticles } },
     });
