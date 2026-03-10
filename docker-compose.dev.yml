@@ -46,6 +46,7 @@ services:
   api:
     image: node:20-alpine
     container_name: email-whatsapp-api-dev
+    user: root
     working_dir: /app
     env_file: .env
     # Explicitly export DATABASE_URL to ensure it overrides .env file
@@ -64,6 +65,7 @@ services:
       DATABASE_URL: postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge
       DIRECT_URL: postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge
       HOST: 0.0.0.0
+      PORT: 3000
       API_PORT: 3000
       CHOKIDAR_USEPOLLING: 'true'
     ports:
@@ -89,6 +91,7 @@ services:
   frontend:
     image: node:20-alpine
     container_name: email-whatsapp-frontend-dev
+    user: root
     working_dir: /app
     env_file: .env
     # Skip npm install - node_modules is shared with api service which installs first
