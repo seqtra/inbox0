@@ -52,7 +52,7 @@ export default async function (fastify: FastifyInstance) {
     try {
       const gmailService = new GmailService(
         tokens.access_token,
-        tokens.refresh_token ?? undefined
+        tokens.refresh_token ?? undefined,
       );
       const emails = await gmailService.fetchEmails(undefined, 10);
       return { success: true, data: emails };
@@ -67,7 +67,7 @@ export default async function (fastify: FastifyInstance) {
   });
 
   /**
-   * POST /api/emails/sync
+   * POST /api/emails/sync test
    * Syncs emails from Gmail (fetches last 20). Returns count for now.
    */
   fastify.post('/sync', async (request, reply) => {
@@ -87,7 +87,7 @@ export default async function (fastify: FastifyInstance) {
     try {
       const gmailService = new GmailService(
         tokens.access_token,
-        tokens.refresh_token ?? undefined
+        tokens.refresh_token ?? undefined,
       );
       const emails = await gmailService.fetchEmails(undefined, 20);
       return { success: true, data: { count: emails.length } };
@@ -144,7 +144,7 @@ export default async function (fastify: FastifyInstance) {
     try {
       const gmailService = new GmailService(
         tokens.access_token,
-        tokens.refresh_token ?? undefined
+        tokens.refresh_token ?? undefined,
       );
       const emails = await gmailService.fetchEmails(undefined, 20);
       const summary = await getAIService().summarizeInbox(emails);
