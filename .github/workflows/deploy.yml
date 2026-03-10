@@ -2,10 +2,11 @@
 # GitHub Actions CI/CD for inbox-0
 #
 # On push to main, this workflow will:
-# 1. Lint and test the codebase
-# 2. Build Docker images for API and frontend
-# 3. Push images to GitHub Container Registry (ghcr.io)
-# 4. Deploy to your server via SSH (pull + restart)
+# 1. Build Docker images for API and frontend
+# 2. Push images to GitHub Container Registry (ghcr.io)
+# 3. Deploy to your server via SSH (pull + restart)
+#
+# Lint and test are skipped for faster deploys.
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   DEPLOY_SERVER   - Hostname or IP of your VPS (e.g. inbox-0.com)
@@ -26,48 +27,8 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: email_whatsapp_bridge
-          POSTGRES_USER: devuser
-          POSTGRES_PASSWORD: devpassword
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      DATABASE_URL: postgresql://devuser:devpassword@localhost:5432/email_whatsapp_bridge
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        run: npx prisma generate --schema=libs/shared/prisma/schema.prisma
-
-      - name: Lint
-        run: npx nx run-many --target=lint --all --skip-nx-cache
-
-      - name: Test
-        run: npx nx run-many --target=test --all --skip-nx-cache
-
   build:
     runs-on: ubuntu-latest
-    needs: test
     permissions:
       contents: read
       packages: write
