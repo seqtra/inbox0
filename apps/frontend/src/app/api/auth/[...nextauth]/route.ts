@@ -2,6 +2,7 @@
 
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
 
@@ -31,6 +32,30 @@ export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
   // Use the request host for callbacks (required on Vercel; accepted at runtime by next-auth)
   trustHost: true,
   providers: [
+    CredentialsProvider({
+      name: "Local Admin",
+      credentials: {
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const submitted = credentials?.password;
+        const expected = process.env.ADMIN_PASSWORD;
+
+        if (!expected) {
+          // Fail closed if not configured
+          console.warn("[nextauth][credentials] ADMIN_PASSWORD is not set");
+          return null;
+        }
+
+        if (submitted && submitted === expected) {
+          console.log("[nextauth][credentials] Local admin password accepted");
+          return { id: "admin-1", name: "Local Admin", email: "admin@local.dev" };
+        }
+
+        console.warn("[nextauth][credentials] Invalid password");
+        return null;
+      },
+    }),
     GoogleProvider({
       clientId: process.env.GMAIL_CLIENT_ID!,
       clientSecret: process.env.GMAIL_CLIENT_SECRET!,
@@ -47,9 +72,23 @@ export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      // On sign-in, persist the user fields into the JWT so they are available to session().
+      if (user) {
+        token.sub = user.id;
+        token.email = user.email;
+        token.name = user.name;
+      }
+      return token;
+    },
+    async session({ session, user, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        // JWT strategy: user is often undefined; rely on token.
+        // DB strategy: user is present; keep compatibility.
+        session.user.id = user?.id ?? (typeof token?.sub === "string" ? token.sub : session.user.id);
+        session.user.email =
+          user?.email ??
+          (typeof token?.email === "string" ? token.email : session.user.email);
       }
       return session;
     },
@@ -71,7 +110,8 @@ export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
     }
   },
   session: {
-    strategy: "database",
+    // CredentialsProvider requires JWT sessions (database sessions can silently fail).
+    strategy: "jwt",
   },
 };
 

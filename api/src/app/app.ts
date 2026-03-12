@@ -18,8 +18,11 @@ export async function app(fastify: FastifyInstance, opts: AppOptions) {
   fastify.register(cookie);
   // Register CORS to allow frontend (localhost:4200) to access API (localhost:3000)
   fastify.register(cors, {
-    origin: ['http://localhost:4200', 'http://127.0.0.1:4200'],
+    // For local development, allow all dev origins (localhost, 0.0.0.0, etc.).
+    // If you tighten this later, make sure to include the exact frontend origin.
+    origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
   // MANUALLY REGISTER PLUGINS
   // (Instead of using AutoLoad, we import and register them explicitly)
