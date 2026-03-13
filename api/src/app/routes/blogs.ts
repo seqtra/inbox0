@@ -76,6 +76,7 @@ const GenerateSchema = z
     mode: z.enum(['auto', 'topic', 'custom']).optional(),
     topic: z.string().min(1).max(500).optional(),
     customContent: z.string().min(1).max(50_000).optional(),
+    systemPromptOverride: z.string().max(10_000).optional(),
   })
   .superRefine((val, ctx) => {
     const mode = val.mode ?? 'auto';
@@ -142,16 +143,23 @@ async function getStyleContextPosts() {
   });
 }
 
-async function generateBlogDraft(input: { mode: GenerateMode; topic?: string; customContent?: string }) {
-  const contextPosts = await getStyleContextPosts();
-
-  const persona =
+function buildSystemPrompt(input: {
+  mode: GenerateMode;
+  systemPromptOverride?: string;
+  contextPosts: { title: string; content: string }[];
+}) {
+  const defaultPersona =
     "You are an elite B2B SaaS copywriter and productivity expert for 'inbox0', a modern app designed to help professionals conquer email overload and achieve Inbox Zero. Your tone is sharp, modern, highly actionable, and tech-savvy. Use formatting like H2s, bullet points, and code-like precision.";
 
+  const basePrompt =
+    input.systemPromptOverride && input.systemPromptOverride.trim().length > 0
+      ? input.systemPromptOverride.trim()
+      : defaultPersona;
+
   const contextBlock =
-    contextPosts.length === 0
+    input.contextPosts.length === 0
       ? 'No prior published posts found.'
-      : contextPosts
+      : input.contextPosts
           .map(
             (p, i) =>
               `---\nReferencePost_${i + 1}_Title: ${p.title}\nReferencePost_${i + 1}_Markdown:\n${truncateForPrompt(
@@ -163,9 +171,24 @@ async function generateBlogDraft(input: { mode: GenerateMode; topic?: string; cu
 
   const outputContract = `Return a single JSON object only (no markdown, no code fence) with EXACT keys:\n{\n  \"title\": string,\n  \"contentMarkdown\": string,\n  \"imageSearchTerm\": string\n}`;
 
-  const baseGuidelines = `The output contentMarkdown must be written in Markdown and include:\n- A short hook\n- Multiple H2 sections\n- Bullet points where useful\n- A crisp conclusion with a CTA for inbox0\n\nMatch the tone and formatting patterns found in the reference posts.`;
+  const baseGuidelines = `The output contentMarkdown must be written in Markdown and include:\n- A short hook\n- Multiple H2 sections\n- Bullet points where useful\n- A crisp conclusion with a CTA for inbox0.\n\nMatch the tone and formatting patterns found in the reference posts.`;
 
-  const systemPrompt = `${persona}\n\nYou are given 3 reference posts below. Use them to match writing style (voice, pacing, structure).\n\n${outputContract}\n\n${baseGuidelines}\n\nReference posts:\n${contextBlock}\n`;
+  return `${basePrompt}\n\n${outputContract}\n\n${baseGuidelines}\n\nReference posts:\n${contextBlock}\n`;
+}
+
+async function generateBlogDraft(input: {
+  mode: GenerateMode;
+  topic?: string;
+  customContent?: string;
+  systemPromptOverride?: string;
+}) {
+  const contextPosts = await getStyleContextPosts();
+
+  const systemPrompt = buildSystemPrompt({
+    mode: input.mode,
+    systemPromptOverride: input.systemPromptOverride,
+    contextPosts,
+  });
 
   let userPrompt: string;
   if (input.mode === 'auto') {
@@ -352,6 +375,7 @@ export default async function blogsRoutes(fastify: FastifyInstance) {
         mode,
         topic: body.data.topic,
         customContent: body.data.customContent,
+        systemPromptOverride: body.data.systemPromptOverride,
       });
       const imageUrl = await fetchUnsplashImageUrl(aiOut.imageSearchTerm).catch(() => null);
       const baseSlug = slugify(aiOut.title);
@@ -437,5 +461,98 @@ export default async function blogsRoutes(fastify: FastifyInstance) {
       request.log.error({ err }, 'AI blog regeneration failed');
       return reply.status(502).send(fail('AI_ERROR', err instanceof Error ? err.message : 'AI regeneration failed'));
     }
+  });
+
+  // POST /api/blogs/:id/image/regenerate (admin)
+  fastify.post('/blogs/:id/image/regenerate', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const existing = await prisma.blogPost.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        imageUrl: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!existing) {
+      return reply.status(404).send(fail('NOT_FOUND', 'Post not found'));
+    }
+
+    const searchTerm = `${existing.title} email productivity inbox zero blog hero`;
+    const imageUrl = await fetchUnsplashImageUrl(searchTerm).catch(() => null);
+
+    if (!imageUrl) {
+      return reply.status(502).send(fail('UNSPLASH_ERROR', 'Failed to fetch image from Unsplash'));
+    }
+
+    const updated = await prisma.blogPost.update({
+      where: { id: existing.id },
+      data: { imageUrl },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        content: true,
+        imageUrl: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return reply.send(ok(updated));
+  });
+
+  // POST /api/blogs/:id/image/upload (admin, JSON base64 data URL)
+  fastify.post('/blogs/:id/image/upload', { preHandler: [requireAdmin] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = (request.body ?? {}) as { dataUrl?: string };
+
+    if (!body.dataUrl || typeof body.dataUrl !== 'string') {
+      return reply.status(400).send(fail('VALIDATION_ERROR', 'dataUrl is required'));
+    }
+
+    const dataUrl = body.dataUrl;
+    const match = /^data:(image\/(png|jpeg|webp));base64,[a-zA-Z0-9+/=]+$/.exec(dataUrl);
+    if (!match) {
+      return reply
+        .status(400)
+        .send(fail('VALIDATION_ERROR', 'dataUrl must be a valid base64 PNG, JPEG, or WEBP image data URI'));
+    }
+
+    const existing = await prisma.blogPost.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return reply.status(404).send(fail('NOT_FOUND', 'Post not found'));
+    }
+
+    const updated = await prisma.blogPost.update({
+      where: { id: existing.id },
+      data: { imageUrl: dataUrl },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        content: true,
+        imageUrl: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return reply.send(ok(updated));
   });
 }

@@ -12,6 +12,7 @@
     "@fastify/autoload": "~6.0.3",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.2.0",
+    "@fastify/multipart": "^8.3.1",
     "@fastify/postgres": "^6.0.2",
     "@fastify/sensible": "~6.0.2",
     "@next-auth/prisma-adapter": "^1.0.7",
