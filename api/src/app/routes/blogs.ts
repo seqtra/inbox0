@@ -27,9 +27,24 @@ function fail(code: ApiErrorCode, message: string, details?: Record<string, unkn
   return { success: false as const, error: { code, message, ...(details ? { details } : {}) }, timestamp: nowIso() };
 }
 
-async function requireAdmin(_request: FastifyRequest, _reply: FastifyReply) {
-  // Phase 1 (local dev unblock): bypass all admin authentication checks.
-  return;
+async function requireAdmin(request: FastifyRequest, reply: FastifyReply) {
+  const fastify = request.server as FastifyInstance;
+  await fastify.authenticate(request, reply);
+  if (reply.sent) return;
+
+  const userId = request.user?.id;
+  if (!userId) {
+    return reply.status(403).send(fail('FORBIDDEN', 'Admin access required'));
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isAdmin: true },
+  });
+
+  if (!user?.isAdmin) {
+    return reply.status(403).send(fail('FORBIDDEN', 'Admin access required'));
+  }
 }
 
 function slugify(input: string): string {

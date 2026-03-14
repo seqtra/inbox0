@@ -1,5 +1,9 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+
+import { authOptions } from '../api/auth/[...nextauth]/route';
 
 export const metadata: Metadata = {
   title: 'Admin | Inbox0',
@@ -15,6 +19,16 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect('/api/auth/signin');
+  }
+
+  if (session.user.isAdmin !== true) {
+    redirect('/');
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Navigation */}
