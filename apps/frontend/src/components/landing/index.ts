@@ -41,3 +41,4 @@ export {
   type FinalCTAProps,
   type FinalCTAFeature,
 } from './final-cta';
+export { FAQ, LANDING_FAQ_ITEMS, type FAQProps } from './faq';
