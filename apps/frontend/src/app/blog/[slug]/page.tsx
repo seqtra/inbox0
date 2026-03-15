@@ -81,6 +81,7 @@ export async function generateMetadata({
   const description = post.seoDesc || `Read ${post.title} on the Inbox0 blog.`;
   const url = `${SITE_URL}/blog/${post.slug}`;
   const publishedTime = post.publishedAt || post.createdAt;
+  const ogImage = post.imageUrl ? post.imageUrl : `${SITE_URL}/og-image.png`;
 
   return {
     title: `${title} | Inbox0 Blog`,
@@ -101,6 +102,7 @@ export async function generateMetadata({
       publishedTime,
       modifiedTime: post.updatedAt,
       authors: ['Inbox0 Team'],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
     },
 
     // Twitter Card
@@ -108,6 +110,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title,
       description,
+      images: [ogImage],
     },
 
     // Search engine directives
@@ -143,6 +146,7 @@ export default async function BlogPostPage({
     slug: post.slug,
     publishedAt: post.publishedAt || post.createdAt,
     updatedAt: post.updatedAt,
+    imageUrl: post.imageUrl ?? undefined,
   });
 
   const breadcrumbSchema = generateBreadcrumbSchema([
@@ -201,7 +205,26 @@ export default async function BlogPostPage({
 
           <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
 
+<<<<<<< Updated upstream
           <div className="prose lg:prose-xl prose-headings:font-semibold prose-a:text-blue-600 prose-img:rounded-lg">
+=======
+          {post.imageUrl && (
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-100 mb-8">
+              <Image
+                src={post.imageUrl}
+                alt={post.title}
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
+                className="object-cover"
+                sizes="(min-width: 1024px) 768px, 100vw"
+                priority
+              />
+            </div>
+          )}
+
+          <div className="prose prose-slate lg:prose-xl prose-headings:font-semibold prose-a:text-blue-600 prose-img:rounded-lg">
+>>>>>>> Stashed changes
             <ReactMarkdown>{post.content}</ReactMarkdown>
           </div>
 
