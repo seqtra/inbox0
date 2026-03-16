@@ -10,6 +10,13 @@ const nextConfig = {
   },
   // FIX 1: Explicitly transpile the shared library
   transpilePackages: ['@email-whatsapp-bridge/shared'],
+
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'plus.unsplash.com' },
+    ],
+  },
   
   // Workaround for macOS network interface detection issue
   // This prevents Next.js from trying to auto-detect network interfaces

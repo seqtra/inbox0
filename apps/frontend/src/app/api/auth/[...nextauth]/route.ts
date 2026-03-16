@@ -47,9 +47,34 @@ export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user }) {
+      // On sign-in, persist the user fields into the JWT so they are available to session().
+      if (user) {
+        token.sub = user.id;
+        token.email = user.email;
+        token.name = user.name;
+      }
+      return token;
+    },
+    async session({ session, user, token }) {
       if (session.user) {
-        session.user.id = user.id;
+        // JWT strategy: user is often undefined; rely on token.
+        // DB strategy: user is present; keep compatibility.
+        session.user.id = user?.id ?? (typeof token?.sub === "string" ? token.sub : session.user.id);
+        session.user.email =
+          user?.email ??
+          (typeof token?.email === "string" ? token.email : session.user.email);
+        // Load isAdmin from DB so it is always up to date (not stored in JWT).
+        const userId = session.user.id;
+        if (userId) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { isAdmin: true },
+          });
+          session.user.isAdmin = dbUser?.isAdmin ?? false;
+        } else {
+          session.user.isAdmin = false;
+        }
       }
       return session;
     },
@@ -71,7 +96,7 @@ export const authOptions: NextAuthOptions & { trustHost?: boolean } = {
     }
   },
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
 };
 

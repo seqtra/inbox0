@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import ReactMarkdown from 'react-markdown';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from "next/image";
+import Image from 'next/image';
 
 import { StructuredData } from '@/components/seo';
 import {
@@ -20,6 +20,7 @@ interface BlogPost {
   title: string;
   slug: string;
   content: string;
+  imageUrl: string | null;
   seoTitle: string | null;
   seoDesc: string | null;
   publishedAt: string | null;
@@ -28,6 +29,12 @@ interface BlogPost {
   imageUrl: string | null;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: { code: string; message: string };
+  timestamp: string;
+}
 
 // Fetch single post
 async function getPost(slug: string): Promise<BlogPost | null> {
@@ -36,7 +43,9 @@ async function getPost(slug: string): Promise<BlogPost | null> {
       next: { revalidate: 3600 } // ISR: Re-generate page every hour
     });
     if (!res.ok) return null;
-    return res.json();
+    const json = (await res.json()) as ApiResponse<BlogPost>;
+    if (!json.success) return null;
+    return json.data ?? null;
   } catch (error) {
     console.error('Failed to fetch post:', error);
     return null;
@@ -50,7 +59,9 @@ async function getAllPosts(): Promise<BlogPost[]> {
       next: { revalidate: 3600 }
     });
     if (!res.ok) return [];
-    return res.json();
+    const json = (await res.json()) as ApiResponse<BlogPost[]>;
+    if (!json.success) return [];
+    return json.data ?? [];
   } catch (error) {
     console.error('Failed to fetch posts:', error);
     return [];
@@ -208,22 +219,22 @@ export default async function BlogPostPage({
 
           <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
 
-         {post.imageUrl && (
-  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-100 mb-8">
-    <Image
-      src={post.imageUrl}
-      alt={post.title}
-      fill
-      priority
-      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
-      className="object-cover"
-    />
-  </div>
-)}
+          {post.imageUrl && (
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-100 mb-8">
+              <Image
+                src={post.imageUrl}
+                alt={post.title}
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 768px, 100vw"
+                priority
+              />
+            </div>
+          )}
 
-<div className="prose prose-slate lg:prose-xl prose-headings:font-semibold prose-a:text-blue-600 prose-img:rounded-lg">
-  <ReactMarkdown>{post.content}</ReactMarkdown>
-</div>
+          <div className="prose prose-slate lg:prose-xl prose-headings:font-semibold prose-a:text-blue-600 prose-img:rounded-lg">
+            <ReactMarkdown>{post.content}</ReactMarkdown>
+          </div>
 
           {/* Back to Blog Link */}
           <div className="mt-12 pt-8 border-t border-gray-200">
