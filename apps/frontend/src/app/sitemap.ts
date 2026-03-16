@@ -18,7 +18,8 @@ async function getAllPublishedPosts(): Promise<BlogPost[]> {
       next: { revalidate: 3600 } // Revalidate every hour
     });
     if (!res.ok) return [];
-    return res.json();
+    const json = (await res.json()) as { success?: boolean; data?: BlogPost[] };
+    return json?.data ?? [];
   } catch (error) {
     console.error('Failed to fetch posts for sitemap:', error);
     return [];

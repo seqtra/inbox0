@@ -36,6 +36,7 @@ const DEFAULT_LINKS: NavLinkItem[] = [
   { label: 'Product', href: '/', isAnchor: false },
   { label: 'How it Works', href: '#how-it-works', isAnchor: true },
   { label: 'Blog', href: '/blog', isAnchor: false },
+  { label: 'FAQ', href: '#faq', isAnchor: true },
 ];
 
 function LogoIcon() {

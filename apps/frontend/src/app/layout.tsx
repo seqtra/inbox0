@@ -5,14 +5,31 @@ import Script from 'next/script';
 import { Providers } from './providers/index';
 import { cn } from '@/shared/lib/utils';
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://inbox0.com';
+
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'inbox-0 – Important emails, delivered to your WhatsApp',
   description:
     'Stop drowning in your inbox. inbox-0 uses AI to learn what matters to you and delivers smart email summaries right to WhatsApp. Get to zero, stay focused.',
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
     title: 'inbox-0 – Important emails, delivered to your WhatsApp',
     description:
       'Stop drowning in your inbox. inbox-0 uses AI to deliver smart email summaries to WhatsApp. Get to zero, stay focused.',
+    url: SITE_URL,
+    siteName: 'inbox-0',
+    type: 'website',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'inbox-0 – AI Email Filtering to WhatsApp' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'inbox-0 – Important emails, delivered to your WhatsApp',
+    description:
+      'Stop drowning in your inbox. inbox-0 uses AI to deliver smart email summaries to WhatsApp. Get to zero, stay focused.',
+    images: ['/og-image.png'],
   },
 };
 

@@ -26,6 +26,7 @@ interface BlogPost {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  imageUrl: string | null;
 }
 
 interface ApiResponse<T> {
@@ -94,6 +95,7 @@ export async function generateMetadata({
   const description = post.seoDesc || `Read ${post.title} on the Inbox0 blog.`;
   const url = `${SITE_URL}/blog/${post.slug}`;
   const publishedTime = post.publishedAt || post.createdAt;
+  const ogImage = post.imageUrl ? post.imageUrl : `${SITE_URL}/og-image.png`;
 
   return {
     title: `${title} | Inbox0 Blog`,
@@ -114,6 +116,7 @@ export async function generateMetadata({
       publishedTime,
       modifiedTime: post.updatedAt,
       authors: ['Inbox0 Team'],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
     },
 
     // Twitter Card
@@ -121,6 +124,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title,
       description,
+      images: [ogImage],
     },
 
     // Search engine directives
@@ -156,6 +160,7 @@ export default async function BlogPostPage({
     slug: post.slug,
     publishedAt: post.publishedAt || post.createdAt,
     updatedAt: post.updatedAt,
+    imageUrl: post.imageUrl ?? undefined,
   });
 
   const breadcrumbSchema = generateBreadcrumbSchema([

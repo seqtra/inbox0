@@ -44,8 +44,8 @@ const DEFAULT_STATS: HeroStat[] = [
 export function Hero({
   className,
   badgeText = 'AI-Powered Email Intelligence',
-  titleLine1 = 'Important emails,',
-  titleLine2 = 'delivered to your',
+  titleLine1 = 'AI Email Filtering',
+  titleLine2 = 'Delivered to Your',
   titleHighlight = 'WhatsApp',
   description = 'Stop drowning in your inbox. inbox-0 uses AI to learn what matters to you and delivers smart email summaries right to WhatsApp. Get to zero, stay focused.',
   ctaLabel = 'Get Early Access',
