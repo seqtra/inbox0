@@ -24,7 +24,9 @@ interface BlogPost {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  imageUrl: string | null;
 }
+
 
 // Fetch single post
 async function getPost(slug: string): Promise<BlogPost | null> {
