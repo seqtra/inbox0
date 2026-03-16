@@ -205,28 +205,22 @@ export default async function BlogPostPage({
 
           <h1 className="text-4xl font-bold mb-6">{post.title}</h1>
 
-<<<<<<< Updated upstream
-          <div className="prose lg:prose-xl prose-headings:font-semibold prose-a:text-blue-600 prose-img:rounded-lg">
-=======
-          {post.imageUrl && (
-            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-100 mb-8">
-              <Image
-                src={post.imageUrl}
-                alt={post.title}
-                fill
-                priority
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
-                className="object-cover"
-                sizes="(min-width: 1024px) 768px, 100vw"
-                priority
-              />
-            </div>
-          )}
+         {post.imageUrl && (
+  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-100 mb-8">
+    <Image
+      src={post.imageUrl}
+      alt={post.title}
+      fill
+      priority
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 896px"
+      className="object-cover"
+    />
+  </div>
+)}
 
-          <div className="prose prose-slate lg:prose-xl prose-headings:font-semibold prose-a:text-blue-600 prose-img:rounded-lg">
->>>>>>> Stashed changes
-            <ReactMarkdown>{post.content}</ReactMarkdown>
-          </div>
+<div className="prose prose-slate lg:prose-xl prose-headings:font-semibold prose-a:text-blue-600 prose-img:rounded-lg">
+  <ReactMarkdown>{post.content}</ReactMarkdown>
+</div>
 
           {/* Back to Blog Link */}
           <div className="mt-12 pt-8 border-t border-gray-200">
