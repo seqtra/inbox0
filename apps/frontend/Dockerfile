@@ -1,30 +1,16 @@
-##
-# Multi-stage Dockerfile for Next.js Frontend
-#
-# This Dockerfile creates an optimized production image for the Next.js application.
-# It uses multi-stage builds to keep the final image small.
-#
-# Stages:
-# 1. deps: Install dependencies
-# 2. builder: Build the application
-# 3. runner: Run the application
-##
-
 FROM node:20-alpine AS deps
-# Install dependencies needed for native modules
 RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY apps/frontend/package*.json ./apps/frontend/
-COPY libs/shared/package*.json ./libs/shared/
+# Copiar apenas manifests primeiro (melhor cache)
+COPY package.json package-lock.json ./
+COPY apps/frontend/package.json ./apps/frontend/
+COPY libs/shared/package.json ./libs/shared/
 
-# Copy Prisma schema (needed for postinstall script)
+# Copiar prisma schema necessário para postinstall
 COPY libs/shared/prisma ./libs/shared/prisma
 
-# Install dependencies
 RUN npm install
 ##
 # Build Stage

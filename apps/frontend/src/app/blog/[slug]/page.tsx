@@ -26,7 +26,6 @@ interface BlogPost {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  imageUrl: string | null;
 }
 
 interface ApiResponse<T> {

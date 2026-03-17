@@ -26,7 +26,7 @@ COPY libs/shared/package*.json ./libs/shared/
 COPY libs/shared/prisma ./libs/shared/prisma
 
 # Install all dependencies (npm ci for reproducible builds, matches CI)
-RUN npm ci
+RUN npm install
 RUN mkdir -p /app/api/node_modules /app/libs/shared/node_modules
 ##
 # Build Stage
