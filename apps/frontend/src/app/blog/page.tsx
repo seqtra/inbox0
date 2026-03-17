@@ -25,13 +25,6 @@ interface ApiResponse<T> {
   timestamp: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: { code: string; message: string };
-  timestamp?: string;
-}
-
 // Fetch all published posts
 async function getAllPosts(): Promise<BlogPost[]> {
   try {
