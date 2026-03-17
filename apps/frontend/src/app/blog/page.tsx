@@ -15,6 +15,13 @@ interface BlogPost {
   createdAt: string;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: { code: string; message: string };
+  timestamp?: string;
+}
+
 // Fetch all published posts
 async function getAllPosts(): Promise<BlogPost[]> {
   try {
@@ -22,7 +29,9 @@ async function getAllPosts(): Promise<BlogPost[]> {
       next: { revalidate: 3600 } // ISR: Re-generate every hour
     });
     if (!res.ok) return [];
-    return res.json();
+    const json = (await res.json()) as ApiResponse<BlogPost[]>;
+    if (!json.success) return [];
+    return json.data ?? [];
   } catch (error) {
     console.error('Failed to fetch posts:', error);
     return [];
