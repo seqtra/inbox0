@@ -1,6 +1,37 @@
 import Link from 'next/link';
+import { getServerSession } from 'next-auth';
 
-export default function AdminDashboard() {
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+
+export default async function AdminPage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return (
+      <main className="max-w-3xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        <h1 className="text-3xl font-bold text-gray-900">Admin</h1>
+        <p className="mt-3 text-gray-600">
+          Sign in to access admin tools.
+        </p>
+
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/api/auth/signin?callbackUrl=%2Fadmin"
+            className="inline-flex items-center justify-center rounded-md bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-800"
+          >
+            Sign in with Google
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+          >
+            Back to homepage
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50">
       <header className="border-b bg-white/80 backdrop-blur">
@@ -13,6 +44,17 @@ export default function AdminDashboard() {
               <p className="mt-1 text-sm text-zinc-500">
                 Configure AI content, manage your blog, and explore upcoming tools.
               </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <p className="hidden sm:block text-sm text-zinc-500">
+                Signed in as <span className="font-medium text-zinc-700">{session.user?.email}</span>
+              </p>
+              <Link
+                href="/api/auth/signout?callbackUrl=%2Fadmin"
+                className="text-sm font-semibold text-zinc-700 hover:text-zinc-900"
+              >
+                Sign out
+              </Link>
             </div>
           </div>
         </div>
