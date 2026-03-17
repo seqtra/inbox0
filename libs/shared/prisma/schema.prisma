@@ -21,6 +21,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  isAdmin       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -208,6 +209,7 @@ model BlogPost {
   title       String
   slug        String         @unique // For URL: inbox-0.com/blog/best-email-tools
   content     String         @db.Text // The full blog content (Markdown)
+  imageUrl    String?        @db.Text // Unsplash (or other) hero image URL
   seoTitle    String?        // Meta title for Google (max 60 chars)
   seoDesc     String?        // Meta description (max 160 chars)
   status      BlogPostStatus @default(DRAFT)

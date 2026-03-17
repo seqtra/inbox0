@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3000';
@@ -9,10 +10,19 @@ interface BlogPost {
   id: string;
   title: string;
   slug: string;
+  imageUrl: string | null;
   seoTitle: string | null;
   seoDesc: string | null;
   publishedAt: string | null;
   createdAt: string;
+  updatedAt: string;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: { code: string; message: string };
+  timestamp: string;
 }
 
 interface ApiResponse<T> {
@@ -111,42 +121,57 @@ export default async function BlogIndexPage() {
             <p className="text-gray-500 text-lg">No posts published yet. Check back soon!</p>
           </div>
         ) : (
-          <div className="grid gap-8">
+          <div className="grid gap-6 sm:grid-cols-2">
             {posts.map((post) => (
               <article 
                 key={post.id}
-                className="border-b border-gray-200 pb-8 last:border-0"
+                className="group rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <Link 
                   href={`/blog/${post.slug}`}
-                  className="group block"
+                  className="block"
                 >
-                  {post.publishedAt && (
-                    <time 
-                      dateTime={post.publishedAt}
-                      className="text-sm text-gray-500 mb-2 block"
+                  <div className="relative aspect-[16/9] bg-gray-100">
+                    {post.imageUrl ? (
+                      <Image
+                        src={post.imageUrl}
+                        alt={post.title}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 600px, (min-width: 640px) 50vw, 100vw"
+                        priority={false}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200" />
+                    )}
+                  </div>
+
+                  <div className="p-5">
+                    <time
+                      dateTime={post.publishedAt || post.createdAt}
+                      className="text-xs text-gray-500"
                     >
-                      {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                      {new Date(post.publishedAt || post.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
-                        month: 'long',
+                        month: 'short',
                         day: 'numeric'
                       })}
                     </time>
-                  )}
-                  
-                  <h2 className="text-2xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
-                    {post.title}
-                  </h2>
-                  
-                  {post.seoDesc && (
-                    <p className="text-gray-600 line-clamp-2">
-                      {post.seoDesc}
-                    </p>
-                  )}
-                  
-                  <span className="inline-block mt-3 text-blue-600 font-medium group-hover:underline">
-                    Read more →
-                  </span>
+
+                    <h2 className="mt-2 text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                      {post.title}
+                    </h2>
+
+                    {post.seoDesc && (
+                      <p className="mt-2 text-sm text-gray-600 line-clamp-3">
+                        {post.seoDesc}
+                      </p>
+                    )}
+
+                    <div className="mt-4 text-sm text-blue-600 font-medium group-hover:underline">
+                      Read more →
+                    </div>
+                  </div>
                 </Link>
               </article>
             ))}
