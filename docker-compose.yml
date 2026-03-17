@@ -117,8 +117,6 @@ services:
         DATABASE_URL: ${DATABASE_URL:-postgresql://devuser:devpassword@postgres:5432/email_whatsapp_bridge}
     container_name: email-whatsapp-frontend
     restart: unless-stopped
-    ports:
-      - '4200:4200'
     environment:
       # Next.js configuration (API URL via Nginx when using docker-compose)
       NODE_ENV: production
@@ -141,20 +139,20 @@ services:
   #
   # Single entrypoint for API and frontend on port 80.
   ##
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: email-whatsapp-nginx
-  #   restart: unless-stopped
-  #   ports:
-  #     - '80:80'
-  #     - '443:443'
-  #   volumes:
-  #     - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-  #     - /etc/letsencrypt:/etc/letsencrypt:ro
-  #     - certbot_webroot:/var/www/certbot:ro
-  #   depends_on:
-  #     - api
-  #     - frontend
+  nginx:
+    image: nginx:alpine
+    container_name: email-whatsapp-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
+    depends_on:
+      - api
+      - frontend
 
 ##
 # Named volumes for data persistence
